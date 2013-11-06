@@ -1,8 +1,11 @@
+import sys
+
 from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream)
 from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform)
 from PyQt5.QtWidgets import (QLabel, QScrollArea, QAction, QApplication, QFileDialog, QMainWindow, QMessageBox, QTextEdit, QSizePolicy)
 
 from ui_dialog import Ui_MainWindow
+from ui_settings import Ui_SettingsDialog
 
 class MainWindow(QMainWindow):
     sequenceNumber = 1
@@ -73,15 +76,16 @@ class MainWindow(QMainWindow):
 
     def on_settings(self):
         # TODO: show settings dialog
-        QMessageBox.information(self, "Title", "Settings")
+        dialog = QDialog()
+        dialog.ui = Ui_SettingsDialog()
+        dialog.ui.setupUi(dialog)
+        dialog.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        dialog.exec_()
 
     def on_about(self):
         QMessageBox.information(self, "About PyMangaReader", "MIT License")
 
 if __name__ == '__main__':
-
-    import sys
-
     try:
         app = QApplication(sys.argv)
         mainWin = MainWindow()

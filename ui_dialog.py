@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '.\ui_dialog.ui'
 #
-# Created: Wed Nov  6 22:44:20 2013
+# Created: Wed Nov  6 22:58:06 2013
 #      by: PyQt5 UI code generator 5.1.1
 #
 # WARNING! All changes made in this file will be lost!

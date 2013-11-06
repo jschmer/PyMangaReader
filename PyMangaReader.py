@@ -1,6 +1,6 @@
 from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream)
-from PyQt5.QtGui import QIcon, QKeySequence
-from PyQt5.QtWidgets import (QAction, QApplication, QFileDialog, QMainWindow, QMessageBox, QTextEdit)
+from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform)
+from PyQt5.QtWidgets import (QLabel, QScrollArea, QAction, QApplication, QFileDialog, QMainWindow, QMessageBox, QTextEdit, QSizePolicy)
 
 from ui_dialog import Ui_MainWindow
 
@@ -13,15 +13,63 @@ class MainWindow(QMainWindow):
 
         # Set up the user interface from Designer.
         self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
 
-        try:
-            self.ui.setupUi(self)
-        except Exception as e:
-            print(e.message)
+        # arbitrary default size
+        self.resize(800, 600)
 
-        # create menu actions
+        # debug: load image
+        filename = "C:/Projects/Py/PyMangaReader/bild.jpg"
+        self.load(filename)
+            
+        # connect buttons
         self.ui.pushSettings.clicked.connect(self.on_settings)
         self.ui.pushAbout.clicked.connect(self.on_about)
+
+    def load(self, image_path):
+        image = QImage(image_path)
+        if image.isNull():
+            QMessageBox.error(self, "Error", "Cannot load %s." % image_path)
+        else:
+            self.manga_image = QPixmap.fromImage(image)
+            self.ui.manga_image_label.setPixmap(self.manga_image)
+
+    # fit image into label
+    def resizeEvent(self, event):
+        print("Label: %d x %d" % (self.ui.manga_image_label.size().width(), self.ui.manga_image_label.size().height()))
+        pic = self.manga_image.scaled(self.ui.manga_image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.ui.manga_image_label.setPixmap(pic)
+
+    # rotate image
+    def rotate(self, deg):
+        rotate = QTransform().rotate(deg)
+        self.manga_image = self.manga_image.transformed(rotate);
+        self.resizeEvent(None)
+        
+    def keyPressEvent(self, event):
+        # rotate cw
+        if event.key() == Qt.Key_R:
+            self.rotate(90)    
+        # rotate ccw
+        if event.key() == Qt.Key_E:
+            self.rotate(-90)
+        # hide menu
+        elif event.key() == Qt.Key_H:
+            if self.ui.groupBox.isVisible():
+                self.ui.groupBox.hide()
+
+                # yay! hacking around! qt doesn't update the size of the qlabel after hiding the groupbox
+                # so i force the update here with hiding and showing the centralwidget
+                self.ui.centralwidget.hide()
+                self.ui.centralwidget.show()
+            else:
+                self.ui.groupBox.show()
+           
+            # update image in label
+            self.resizeEvent(None)
+        # ESC
+        if event.key() == Qt.Key_Escape:
+            self.close()
 
     def on_settings(self):
         # TODO: show settings dialog

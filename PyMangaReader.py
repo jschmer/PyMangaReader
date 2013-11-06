@@ -29,11 +29,18 @@ class MainWindow(QMainWindow):
         self.ui.pushSettings.clicked.connect(self.on_settings)
         self.ui.pushAbout.clicked.connect(self.on_about)
 
-        # load application settings from appdata dir
-        self.settings = {}
+        # loading settings
+        settings = QSettings("jschmer", "PyMangaReader");
 
-        # load manga settings
-        self.mangasettings = {}
+        # window geometry
+        geom = settings.value("geometry")
+        if geom:
+            self.restoreGeometry(geom)
+
+        # configuration/settings
+        config = settings.value("settings")
+        if config:
+            self.settings = config
 
     def load(self, image_path):
         image = QImage(image_path)
@@ -48,6 +55,13 @@ class MainWindow(QMainWindow):
         print("Label: %d x %d" % (self.ui.manga_image_label.size().width(), self.ui.manga_image_label.size().height()))
         pic = self.manga_image.scaled(self.ui.manga_image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.ui.manga_image_label.setPixmap(pic)
+
+    # save window size and position
+    def closeEvent(self, event):
+        settings = QSettings("jschmer", "PyMangaReader");
+        settings.setValue("geometry", self.saveGeometry());
+        settings.setValue("settings", self.settings);
+        QMainWindow.closeEvent(self, event);
 
     # rotate image
     def rotate(self, deg):

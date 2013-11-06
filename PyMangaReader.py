@@ -36,6 +36,9 @@ class MainWindow(QMainWindow):
         geom = settings.value("geometry")
         if geom:
             self.restoreGeometry(geom)
+            self.showMenu(True)
+            self.showNormal()
+            self.resizeEvent(None)
 
         # configuration/settings
         config = settings.value("settings")
@@ -52,6 +55,7 @@ class MainWindow(QMainWindow):
 
     # fit image into label
     def resizeEvent(self, event):
+        self.updateHack()
         print("Label: %d x %d" % (self.ui.manga_image_label.size().width(), self.ui.manga_image_label.size().height()))
         pic = self.manga_image.scaled(self.ui.manga_image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.ui.manga_image_label.setPixmap(pic)
@@ -69,6 +73,24 @@ class MainWindow(QMainWindow):
         self.manga_image = self.manga_image.transformed(rotate);
         self.resizeEvent(None)
         
+    def updateHack(self):
+        # yay! hacking around! qt doesn't update the size of the qlabel after hiding the groupbox
+        # so i force the update here with hiding and showing the centralwidget
+        self.ui.centralwidget.hide()
+        self.ui.centralwidget.show()
+
+    def showMenu(self, activate = None):
+        if activate == None:
+            activate = not self.ui.groupBox.isVisible()
+
+        if activate:
+            self.ui.groupBox.show()
+        else:
+            self.ui.groupBox.hide()
+
+        # update image in label
+        self.resizeEvent(None)
+
     def keyPressEvent(self, event):
         # rotate cw
         if event.key() == Qt.Key_R:
@@ -76,20 +98,17 @@ class MainWindow(QMainWindow):
         # rotate ccw
         if event.key() == Qt.Key_E:
             self.rotate(-90)
+        # go fullscreen!
+        if event.key() == Qt.Key_F:
+            if not self.isFullScreen():
+                self.showMenu(False)
+                self.showFullScreen()
+            else:
+                self.showMenu(True)
+                self.showNormal()
         # hide menu
         elif event.key() == Qt.Key_H:
-            if self.ui.groupBox.isVisible():
-                self.ui.groupBox.hide()
-
-                # yay! hacking around! qt doesn't update the size of the qlabel after hiding the groupbox
-                # so i force the update here with hiding and showing the centralwidget
-                self.ui.centralwidget.hide()
-                self.ui.centralwidget.show()
-            else:
-                self.ui.groupBox.show()
-           
-            # update image in label
-            self.resizeEvent(None)
+            self.showMenu()
         # ESC
         if event.key() == Qt.Key_Escape:
             self.close()

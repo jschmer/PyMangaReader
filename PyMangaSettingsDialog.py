@@ -36,7 +36,7 @@ class SettingsDialog(QDialog):
         self.ui.pushSelectUnrarExecutable.clicked.connect(self.selectUnrarPath)
 
     def addMangaDir(self):
-        dir = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+        dir = QFileDialog.getExistingDirectory(self, "Select Directory")
         if len(dir) > 0:
             self.settings[MANGA_DIRS].append(dir)
         self.updateData()
@@ -48,13 +48,13 @@ class SettingsDialog(QDialog):
         self.updateData()
 
     def selectMangaSettingsDir(self):
-        dir = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+        dir = QFileDialog.getExistingDirectory(self, "Select Directory", self.settings[MANGA_SETTINGS])
         if len(dir) > 0:
             self.settings[MANGA_SETTINGS] = dir
         self.updateData()
 
     def selectUnrarPath(self):
-        file = QFileDialog.getOpenFileName(self, "Select Unrar executable")
+        file = QFileDialog.getOpenFileName(self, "Select Unrar executable", self.settings[UNRAR_EXE])
         if len(file[0]) > 0:
             self.settings[UNRAR_EXE] = file[0]
         self.updateData()

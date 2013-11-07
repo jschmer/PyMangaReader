@@ -39,7 +39,7 @@ class MainWindow(QMainWindow):
         self.ui.list_manga.currentIndexChanged.connect(self.loadVolumeFiles)
         self.ui.list_volume.currentIndexChanged.connect(self.loadChapterFiles)
         self.ui.list_chapter.currentIndexChanged.connect(self.loadPageFiles)
-        self.ui.list_page.currentIndexChanged.connect(self.onPageIdxChanged)
+        self.ui.list_page.currentIndexChanged.connect(self.loadPage)
 
         # select last viewed manga
         last_manga = self.settings.load("last_manga")
@@ -82,7 +82,21 @@ class MainWindow(QMainWindow):
         page = self.ui.list_page.currentText()
         return page
 
+    def updateIndices(self):
+        # update idx/count text
+        self.ui.volume_label.setText("%d/%d" % (self.ui.list_volume.currentIndex()+1, self.ui.list_volume.count()))
+        self.ui.chapter_label.setText("%d/%d" % (self.ui.list_chapter.currentIndex()+1, self.ui.list_chapter.count()))
+        self.ui.page_label.setText("%d/%d" % (self.ui.list_page.currentIndex()+1, self.ui.list_page.count()))
+
     def loadVolumeFiles(self):
+        self.manga_pages.clear()
+        self.manga_chaps.clear()
+        self.manga_vols.clear()
+
+        self.ui.list_page.clear()
+        self.ui.list_chapter.clear()
+        self.ui.list_volume.clear()
+
         # current manga book
         selected = self.selectedManga()
         if selected in self.manga_books:
@@ -97,8 +111,17 @@ class MainWindow(QMainWindow):
             # add to gui
             self.ui.list_volume.clear()
             self.ui.list_volume.addItems(sorted([key for key, value in self.manga_vols.items()]))
+            self.updateIndices()      
+        else:
+            self.clearImage()
 
     def loadChapterFiles(self):
+        self.manga_pages.clear()
+        self.manga_chaps.clear()
+
+        self.ui.list_page.clear()
+        self.ui.list_chapter.clear()
+
         selected = self.selectedVolume()
         if selected in self.manga_vols:
             chap_path = self.manga_vols[selected]
@@ -112,8 +135,14 @@ class MainWindow(QMainWindow):
             # add to gui
             self.ui.list_chapter.clear()
             self.ui.list_chapter.addItems(sorted([key for key, value in self.manga_chaps.items()]))
+            self.updateIndices()
+        else:
+            self.clearImage()
 
     def loadPageFiles(self):
+        self.manga_pages.clear()
+        self.ui.list_page.clear()
+
         selected = self.selectedChapter()
         if selected in self.manga_chaps:
             page_path = self.manga_chaps[selected]
@@ -127,6 +156,23 @@ class MainWindow(QMainWindow):
             # add to gui
             self.ui.list_page.clear()
             self.ui.list_page.addItems(sorted([key for key, value in self.manga_pages.items()]))
+            self.updateIndices()
+        else:
+            self.clearImage()
+
+    def loadPage(self, idx = None):
+        """
+        load an image
+        idx is the selected index of the list_page combobox
+        """
+        if idx == -1:
+            self.clearImage()
+            return
+
+        image_path = self.manga_pages[self.selectedPage()]
+        self.loadImage(image_path)
+
+        self.updateIndices()
 
     def loadMangaBooks(self):
         # scan each configured directory for top-level mangas
@@ -142,18 +188,6 @@ class MainWindow(QMainWindow):
 
         self.ui.list_manga.addItems(sorted([key for key, value in self.manga_books.items()]))
 
-    def onPageIdxChanged(self, idx = None):
-        """
-        load an image
-        idx is the selected index of the list_page combobox
-        """
-        if idx == -1:
-            self.manga_image.clear()
-            return
-
-        image_path = self.manga_pages[self.selectedPage()]
-        self.loadImage(image_path)
-
     def loadImage(self, image_path):
         """ load an image """
         image = QImage(image_path)
@@ -163,6 +197,20 @@ class MainWindow(QMainWindow):
             self.manga_image = QPixmap.fromImage(image)
             self.ui.manga_image_label.setPixmap(self.manga_image)
             self.resizeEvent(None)
+
+    def clearImage(self):
+        self.manga_image = QPixmap()
+        self.resizeEvent(None)
+
+    def clearMangaData(self):
+        self.manga_pages.clear()
+        self.manga_chaps.clear()
+        self.manga_vols.clear()
+
+        self.ui.list_page.clear()
+        self.ui.list_chapter.clear()
+        self.ui.list_volume.clear()
+
 
     def resizeEvent(self, event):
         """ fit image into label """

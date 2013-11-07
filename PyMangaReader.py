@@ -7,6 +7,17 @@ from PyQt5.QtWidgets import (QDialog, QComboBox, QLabel, QScrollArea, QAction, Q
 
 from ui_mainwindow import Ui_MainWindow
 from PyMangaSettings import *
+from PyMangaLayer import *
+
+supported_archives = [".zip"]
+def isSupportedArchive(file):
+        if os.path.isdir(file):
+            return True
+        else:
+            for arch in supported_archives:
+                if arch not in file:
+                    return False
+            return True
 
 class MainWindow(QMainWindow):
     settings = Settings()
@@ -47,10 +58,6 @@ class MainWindow(QMainWindow):
             # select it!
             idx = self.ui.list_manga.findText(last_manga)
             self.ui.list_manga.setCurrentIndex(idx)
-
-        # debug: load image
-        filename = "C:/Projects/Py/PyMangaReader/bild.jpg"
-        self.loadImage(filename)
 
         # load previous window geometry
         geom = self.settings.load("geometry")
@@ -103,15 +110,14 @@ class MainWindow(QMainWindow):
             manga_path = self.manga_books[selected]
             print("Loading volume data from", manga_path)
 
-            # for current manga: search for volumes: directories and archives (zip, rar)
-            vols = [(x, os.path.join(manga_path, x)) for x in os.listdir(manga_path)]
-            vols = [x for x in vols if os.path.isdir(x[1])] # throw out anyting other than directories
+            vol_layer = Layer(manga_path).open()
+            if vol_layer.names:
+                self.manga_vols = vol_layer.names
 
-            self.manga_vols = dict(vols)
-            # add to gui
-            self.ui.list_volume.clear()
-            self.ui.list_volume.addItems(sorted([key for key, value in self.manga_vols.items()]))
-            self.updateIndices()      
+                # add to gui
+                self.ui.list_volume.clear()
+                self.ui.list_volume.addItems(sorted([key for key, value in self.manga_vols.items()]))
+                self.updateIndices()      
         else:
             self.clearImage()
 
@@ -127,15 +133,14 @@ class MainWindow(QMainWindow):
             chap_path = self.manga_vols[selected]
             print("Loading chapter data from", chap_path)
 
-            # for current volume: search for chapters: directories and archives (zip, rar)
-            chaps = [(x, os.path.join(chap_path, x)) for x in os.listdir(chap_path)]
-            chaps = [x for x in chaps if os.path.isdir(x[1])] # throw out anyting other than directories
+            chap_layer = chap_path.open()
+            if chap_layer.names:
+                self.manga_chaps = chap_layer.names
 
-            self.manga_chaps = dict(chaps)
-            # add to gui
-            self.ui.list_chapter.clear()
-            self.ui.list_chapter.addItems(sorted([key for key, value in self.manga_chaps.items()]))
-            self.updateIndices()
+                # add to gui
+                self.ui.list_chapter.clear()
+                self.ui.list_chapter.addItems(sorted([key for key, value in self.manga_chaps.items()]))
+                self.updateIndices()
         else:
             self.clearImage()
 
@@ -148,15 +153,14 @@ class MainWindow(QMainWindow):
             page_path = self.manga_chaps[selected]
             print("Loading page data from", page_path)
 
-            # for current volume: search for chapters: directories and archives (zip, rar)
-            pages = [(x, os.path.join(page_path, x)) for x in os.listdir(page_path)]
-            pages = [x for x in pages if os.path.isfile(x[1])] # throw out anyting other than directories
+            page_layer = page_path.open()
+            if page_layer.names:
+                self.manga_pages = page_layer.names
 
-            self.manga_pages = dict(pages)
-            # add to gui
-            self.ui.list_page.clear()
-            self.ui.list_page.addItems(sorted([key for key, value in self.manga_pages.items()]))
-            self.updateIndices()
+                # add to gui
+                self.ui.list_page.clear()
+                self.ui.list_page.addItems(sorted([key for key, value in self.manga_pages.items()]))
+                self.updateIndices()
         else:
             self.clearImage()
 
@@ -169,8 +173,10 @@ class MainWindow(QMainWindow):
             self.clearImage()
             return
 
-        image_path = self.manga_pages[self.selectedPage()]
-        self.loadImage(image_path)
+        image_layer = self.manga_pages[self.selectedPage()]
+        image_layer.open()
+        qimg = image_layer.image
+        self.loadImage(qimg)
 
         self.updateIndices()
 
@@ -188,9 +194,12 @@ class MainWindow(QMainWindow):
 
         self.ui.list_manga.addItems(sorted([key for key, value in self.manga_books.items()]))
 
-    def loadImage(self, image_path):
-        """ load an image """
-        image = QImage(image_path)
+    def loadImage(self, image):
+        """ load an image of type QImage """
+        if not isinstance(image, QImage):
+            print("cancelling print for", image)
+            return
+
         if image.isNull():
             QMessageBox.warning(self, "Error", "Cannot load %s." % image_path)
         else:

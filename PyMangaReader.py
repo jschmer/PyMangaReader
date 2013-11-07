@@ -1,4 +1,5 @@
 import sys
+import os
 
 from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream)
 from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform)
@@ -10,6 +11,8 @@ from PyMangaSettings import *
 class MainWindow(QMainWindow):
     settings = Settings()
     manga_image = None
+
+    manga_books = {}
 
     def __init__(self, fileName=None):
         super(MainWindow, self).__init__()
@@ -25,9 +28,23 @@ class MainWindow(QMainWindow):
         # init vars
         self.manga_image = QPixmap()
 
+        self.loadMangaBooks()
+
         # connect buttons
         self.ui.pushSettings.clicked.connect(self.on_settings)
         self.ui.pushAbout.clicked.connect(self.on_about)
+        self.ui.list_manga.currentIndexChanged.connect(self.loadMangaFiles)
+
+        # select last viewed manga
+        last_manga = self.settings.load("last_manga")
+        if last_manga:
+            # select it!
+            idx = self.ui.list_manga.findText(last_manga)
+            self.ui.list_manga.setCurrentIndex(idx)
+
+        # debug: load image
+        filename = "C:/Projects/Py/PyMangaReader/bild.jpg"
+        self.load(filename)
 
         # load previous window geometry
         geom = self.settings.load("geometry")
@@ -40,9 +57,36 @@ class MainWindow(QMainWindow):
             self.showNormal()
             self.resizeEvent(None)
 
-        # debug: load image
-        filename = "C:/Projects/Py/PyMangaReader/bild.jpg"
-        self.load(filename)
+    def selectedManga(self):
+        idx = self.ui.list_manga.currentIndex()
+        manga = self.ui.list_manga.itemText(idx)
+        return manga
+
+    def loadMangaFiles(self):
+        # current manga book
+        manga_path = self.selectedManga()
+
+        # search for volumes: directories and archives (zip, rar)
+
+        # for each volume: search for chapters: directories and archives (zip, rar)
+
+        # for each chapter: search for pages: images (png, jpg)
+
+        print("Loading manga data from",self.manga_books[manga_path])
+
+    def loadMangaBooks(self):
+        # scan each configured directory for top-level mangas
+        manga_list = []
+        for path in self.settings.settings[MANGA_DIRS]:
+            p = os.path.abspath(path)
+            mangas = os.listdir(p)
+
+            # save as (name, path) pairs
+            list = [(x, os.path.join(path, x)) for x in mangas]
+            manga_list += list
+        self.manga_books = dict(manga_list)
+
+        self.ui.list_manga.addItems(sorted([key for key, value in self.manga_books.items()]))
 
     def load(self, image_path):
         """  load an image """
@@ -69,7 +113,13 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         # save window size and position
         self.settings.store("geometry", self.saveGeometry());
+        
+        # save last selected manga
+        self.settings.store("last_manga", self.selectedManga())
+
+        # save general settings
         self.settings.save()
+
         QMainWindow.closeEvent(self, event);
 
     def rotate(self, deg):
@@ -143,4 +193,4 @@ if __name__ == '__main__':
         mainWin.show()
         sys.exit(app.exec_())
     except Exception as ex:
-        print(ex.message)
+        print(ex)

@@ -3,7 +3,7 @@ import os
 
 from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream)
 from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform)
-from PyQt5.QtWidgets import (QDialog, QLabel, QScrollArea, QAction, QApplication, QFileDialog, QMainWindow, QMessageBox, QTextEdit, QSizePolicy)
+from PyQt5.QtWidgets import (QDialog, QComboBox, QLabel, QScrollArea, QAction, QApplication, QFileDialog, QMainWindow, QMessageBox, QTextEdit, QSizePolicy)
 
 from ui_mainwindow import Ui_MainWindow
 from PyMangaSettings import *
@@ -13,6 +13,9 @@ class MainWindow(QMainWindow):
     manga_image = None
 
     manga_books = {}
+    manga_vols = {}
+    manga_chaps = {}
+    manga_pages = {}
 
     def __init__(self, fileName=None):
         super(MainWindow, self).__init__()
@@ -33,7 +36,10 @@ class MainWindow(QMainWindow):
         # connect buttons
         self.ui.pushSettings.clicked.connect(self.on_settings)
         self.ui.pushAbout.clicked.connect(self.on_about)
-        self.ui.list_manga.currentIndexChanged.connect(self.loadMangaFiles)
+        self.ui.list_manga.currentIndexChanged.connect(self.loadVolumeFiles)
+        self.ui.list_volume.currentIndexChanged.connect(self.loadChapterFiles)
+        self.ui.list_chapter.currentIndexChanged.connect(self.loadPageFiles)
+        self.ui.list_page.currentIndexChanged.connect(self.onPageIdxChanged)
 
         # select last viewed manga
         last_manga = self.settings.load("last_manga")
@@ -44,7 +50,7 @@ class MainWindow(QMainWindow):
 
         # debug: load image
         filename = "C:/Projects/Py/PyMangaReader/bild.jpg"
-        self.load(filename)
+        self.loadImage(filename)
 
         # load previous window geometry
         geom = self.settings.load("geometry")
@@ -57,22 +63,70 @@ class MainWindow(QMainWindow):
             self.showNormal()
             self.resizeEvent(None)
 
+    def saveCurrentMangaSettings(self):
+        pass
+
     def selectedManga(self):
-        idx = self.ui.list_manga.currentIndex()
-        manga = self.ui.list_manga.itemText(idx)
+        manga = self.ui.list_manga.currentText()
         return manga
 
-    def loadMangaFiles(self):
+    def selectedVolume(self):
+        vol = self.ui.list_volume.currentText()
+        return vol
+
+    def selectedChapter(self):
+        chap = self.ui.list_chapter.currentText()
+        return chap
+
+    def selectedPage(self):
+        page = self.ui.list_page.currentText()
+        return page
+
+    def loadVolumeFiles(self):
         # current manga book
-        manga_path = self.selectedManga()
+        selected = self.selectedManga()
+        if selected in self.manga_books:
+            manga_path = self.manga_books[selected]
+            print("Loading volume data from", manga_path)
 
-        # search for volumes: directories and archives (zip, rar)
+            # for current manga: search for volumes: directories and archives (zip, rar)
+            vols = [(x, os.path.join(manga_path, x)) for x in os.listdir(manga_path)]
+            vols = [x for x in vols if os.path.isdir(x[1])] # throw out anyting other than directories
 
-        # for each volume: search for chapters: directories and archives (zip, rar)
+            self.manga_vols = dict(vols)
+            # add to gui
+            self.ui.list_volume.clear()
+            self.ui.list_volume.addItems(sorted([key for key, value in self.manga_vols.items()]))
 
-        # for each chapter: search for pages: images (png, jpg)
+    def loadChapterFiles(self):
+        selected = self.selectedVolume()
+        if selected in self.manga_vols:
+            chap_path = self.manga_vols[selected]
+            print("Loading chapter data from", chap_path)
 
-        print("Loading manga data from",self.manga_books[manga_path])
+            # for current volume: search for chapters: directories and archives (zip, rar)
+            chaps = [(x, os.path.join(chap_path, x)) for x in os.listdir(chap_path)]
+            chaps = [x for x in chaps if os.path.isdir(x[1])] # throw out anyting other than directories
+
+            self.manga_chaps = dict(chaps)
+            # add to gui
+            self.ui.list_chapter.clear()
+            self.ui.list_chapter.addItems(sorted([key for key, value in self.manga_chaps.items()]))
+
+    def loadPageFiles(self):
+        selected = self.selectedChapter()
+        if selected in self.manga_chaps:
+            page_path = self.manga_chaps[selected]
+            print("Loading page data from", page_path)
+
+            # for current volume: search for chapters: directories and archives (zip, rar)
+            pages = [(x, os.path.join(page_path, x)) for x in os.listdir(page_path)]
+            pages = [x for x in pages if os.path.isfile(x[1])] # throw out anyting other than directories
+
+            self.manga_pages = dict(pages)
+            # add to gui
+            self.ui.list_page.clear()
+            self.ui.list_page.addItems(sorted([key for key, value in self.manga_pages.items()]))
 
     def loadMangaBooks(self):
         # scan each configured directory for top-level mangas
@@ -88,14 +142,27 @@ class MainWindow(QMainWindow):
 
         self.ui.list_manga.addItems(sorted([key for key, value in self.manga_books.items()]))
 
-    def load(self, image_path):
-        """  load an image """
+    def onPageIdxChanged(self, idx = None):
+        """
+        load an image
+        idx is the selected index of the list_page combobox
+        """
+        if idx == -1:
+            self.manga_image.clear()
+            return
+
+        image_path = self.manga_pages[self.selectedPage()]
+        self.loadImage(image_path)
+
+    def loadImage(self, image_path):
+        """ load an image """
         image = QImage(image_path)
         if image.isNull():
-            QMessageBox.error(self, "Error", "Cannot load %s." % image_path)
+            QMessageBox.warning(self, "Error", "Cannot load %s." % image_path)
         else:
             self.manga_image = QPixmap.fromImage(image)
             self.ui.manga_image_label.setPixmap(self.manga_image)
+            self.resizeEvent(None)
 
     def resizeEvent(self, event):
         """ fit image into label """
@@ -116,6 +183,9 @@ class MainWindow(QMainWindow):
         
         # save last selected manga
         self.settings.store("last_manga", self.selectedManga())
+
+        # save last vol/chap/page in manga settings
+        self.saveCurrentMangaSettings()
 
         # save general settings
         self.settings.save()

@@ -1,80 +1,54 @@
 import sys
 
-from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream)
-from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform)
-from PyQt5.QtWidgets import (QDialog, QLabel, QScrollArea, QAction, QApplication, QFileDialog, QMainWindow, QMessageBox, QTextEdit, QSizePolicy)
+from PyQt5.QtCore import (QSettings)
 
-from ui_settings import Ui_SettingsDialog
+from PyMangaSettingsDialog import *
 
-class SettingsDialog(QDialog):
+# application tags
+COMPANY = "jschmer"
+APPLICATION = "PyMangaReader"
 
-    def __init__(self, settings = None):
-        super(SettingsDialog, self).__init__()
+class Settings():
 
-        # Set up the user interface from Designer.
-        self.ui = Ui_SettingsDialog()
-        self.ui.setupUi(self)
+    # the default application settings
+    settings = {
+                MANGA_DIRS : [],
+                MANGA_SETTINGS : "MangaData",
+                UNRAR_EXE : "unrar"
+               }
 
-        self.setAttribute(Qt.WA_DeleteOnClose)
+    # load settings from system
+    qsettings = QSettings(COMPANY, APPLICATION)
 
-        self.settings = dict(settings)
+    def __init__(self):
+        # load configuration/settings
+        config = self.qsettings.value("settings")
+        if config:
+            # merge settings
+            self.settings = dict(list(self.settings.items()) + list(config.items()))
 
-        # insert default settings
-        if not "mangadirs" in settings:
-            self.settings["mangadirs"] = []
-        if not "mangasettingsdir" in settings:
-            self.settings["mangasettingsdir"] = "mangadata"
-        if not "unrarexepath" in settings:
-            self.settings["unrarexepath"] = "unrar"
+    def save(self):
+        """ save settings into system """
+        self.store("settings", self.settings)
 
-        # initialitze textboxes with settings
-        self.updateData()
+    def refresh(self):
+        """ load application settings from system """
+        self.qsettings = QSettings(COMPANY, APPLICATION)
 
-        # connect buttons
-        self.ui.pushAddMangaDir.clicked.connect(self.addMangaDir)
-        self.ui.pushRemoveMangaDir.clicked.connect(self.removeMangaDir)
-        self.ui.pushSelectMangaSettingsDir.clicked.connect(self.selectMangaSettingsDir)
-        self.ui.pushSelectUnrarExecutable.clicked.connect(self.selectUnrarPath)
+    def execDialog(self):
+        """ execute dialog and apply settings if pressed OK """
+        dialog = SettingsDialog(self.settings)
+        if dialog.exec_():
+            print("Saving settings...")
+            self.settings = dialog.getSettings()
 
-    def addMangaDir(self):
-        dir = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-        if len(dir) > 0:
-            self.settings["mangadirs"].append(dir)
-        self.updateData()
+    def store(self, tag, value):
+        """ store data in application settings """
+        self.qsettings.setValue(tag, value);
 
-    def removeMangaDir(self):
-        selitems = self.ui.listMangaDirs.selectedItems()
-        self.settings["mangadirs"] = [ v for v in self.settings["mangadirs"] if not v in [x.text() for x in selitems]]
-        self.updateData()
-
-    def selectMangaSettingsDir(self):
-        dir = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-        if len(dir) > 0:
-            self.settings["mangasettingsdir"] = dir
-        self.updateData()
-
-    def selectUnrarPath(self):
-        file = QFileDialog.getOpenFileName(self, "Select Unrar executable")
-        if len(file[0]) > 0:
-            self.settings["unrarexepath"] = file[0]
-        self.updateData()
-
-    def updateData(self):
-        self.ui.listMangaDirs.clear()
-        for dir in self.settings["mangadirs"]:
-            self.ui.listMangaDirs.addItem(dir)
-
-        self.ui.labelMangaSettings.setText(self.settings["mangasettingsdir"])
-        self.ui.labelUnrarExe.setText(self.settings["unrarexepath"])
-
-    def getSettings(self):
-        return self.settings
-
-if __name__ == '__main__':
-    try:
-        app = QApplication(sys.argv)
-        mainWin = MainWindow()
-        mainWin.show()
-        sys.exit(app.exec_())
-    except Exception as ex:
-        print(ex.message)
+    def load(self, tag):
+        """
+        load data from application settings 
+        returns None if tag not available
+        """
+        return self.qsettings.value(tag)

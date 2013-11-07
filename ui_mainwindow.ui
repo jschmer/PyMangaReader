@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>840</width>
+    <width>838</width>
     <height>672</height>
    </rect>
   </property>
@@ -15,11 +15,29 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
+    <property name="spacing">
+     <number>6</number>
+    </property>
     <property name="sizeConstraint">
      <enum>QLayout::SetDefaultConstraint</enum>
     </property>
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
     <item>
      <widget class="QScrollArea" name="scrollArea">
+      <property name="styleSheet">
+       <string notr="true">border: 0px solid gray</string>
+      </property>
       <property name="widgetResizable">
        <bool>true</bool>
       </property>
@@ -28,11 +46,26 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>564</width>
-         <height>652</height>
+         <width>582</width>
+         <height>672</height>
         </rect>
        </property>
        <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
         <item>
          <widget class="QLabel" name="manga_image_label">
           <property name="sizePolicy">
@@ -72,7 +105,7 @@ color: rgb(255, 255, 255);</string>
        </size>
       </property>
       <property name="title">
-       <string>GroupBox</string>
+       <string>Controls</string>
       </property>
       <widget class="QWidget" name="verticalLayoutWidget">
        <property name="geometry">
@@ -107,21 +140,21 @@ color: rgb(255, 255, 255);</string>
           <item row="1" column="0">
            <widget class="QLabel" name="volume_label">
             <property name="text">
-             <string>TextLabel</string>
+             <string>0/0</string>
             </property>
            </widget>
           </item>
           <item row="2" column="0">
            <widget class="QLabel" name="chapter_label">
             <property name="text">
-             <string>TextLabel</string>
+             <string>0/0</string>
             </property>
            </widget>
           </item>
           <item row="3" column="0">
            <widget class="QLabel" name="page_label">
             <property name="text">
-             <string>TextLabel</string>
+             <string>0/0</string>
             </property>
            </widget>
           </item>

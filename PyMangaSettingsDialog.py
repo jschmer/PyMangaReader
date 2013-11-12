@@ -7,7 +7,7 @@ from ui_settings import Ui_SettingsDialog
 
 # setting tags
 MANGA_DIRS = "mangadirs"
-MANGA_SETTINGS = "mangasettingsdir"
+MANGA_SETTINGS_PATH = "mangasettingspath"
 UNRAR_EXE = "unrarexepath"
 
 class SettingsDialog(QDialog):
@@ -32,7 +32,7 @@ class SettingsDialog(QDialog):
         # connect buttons
         self.ui.pushAddMangaDir.clicked.connect(self.addMangaDir)
         self.ui.pushRemoveMangaDir.clicked.connect(self.removeMangaDir)
-        self.ui.pushSelectMangaSettingsDir.clicked.connect(self.selectMangaSettingsDir)
+        self.ui.pushSelectMangaSettingsDir.clicked.connect(self.selectMangaSettingsPath)
         self.ui.pushSelectUnrarExecutable.clicked.connect(self.selectUnrarPath)
 
     def addMangaDir(self):
@@ -47,10 +47,10 @@ class SettingsDialog(QDialog):
         self.settings[MANGA_DIRS] = [ v for v in self.settings[MANGA_DIRS] if not v in [x.text() for x in selitems]]
         self.updateData()
 
-    def selectMangaSettingsDir(self):
-        dir = QFileDialog.getExistingDirectory(self, "Select Directory", self.settings[MANGA_SETTINGS])
-        if len(dir) > 0:
-            self.settings[MANGA_SETTINGS] = dir
+    def selectMangaSettingsPath(self):
+        file = QFileDialog.getSaveFileName(self, "Select Manga Settings File", self.settings[MANGA_SETTINGS_PATH])
+        if len(file) > 0:
+            self.settings[MANGA_SETTINGS_PATH] = file[0]
         self.updateData()
 
     def selectUnrarPath(self):
@@ -64,7 +64,7 @@ class SettingsDialog(QDialog):
         for dir in self.settings[MANGA_DIRS]:
             self.ui.listMangaDirs.addItem(dir)
 
-        self.ui.labelMangaSettings.setText(self.settings[MANGA_SETTINGS])
+        self.ui.labelMangaSettings.setText(self.settings[MANGA_SETTINGS_PATH])
         self.ui.labelUnrarExe.setText(self.settings[UNRAR_EXE])
 
     def getSettings(self):

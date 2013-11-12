@@ -22,8 +22,9 @@ def isSupportedArchive(file):
 class NoElementsError(BaseException): pass
 
 class MainWindow(QMainWindow):
-    settings = Settings()
+    settings = None
     manga_image = None
+    manga_before = None
 
     manga_books = {}
     manga_vols = {}
@@ -33,7 +34,11 @@ class MainWindow(QMainWindow):
     def __init__(self, fileName=None):
         super(MainWindow, self).__init__()
 
-        super(MainWindow, self).setFocusPolicy(Qt.StrongFocus)
+        font = QGuiApplication.font()
+        font.setPointSize(26)
+        QToolTip.setFont(font)
+
+        self.settings = Settings()
 
         # Set up the user interface from Designer
         self.ui = Ui_MainWindow()
@@ -61,7 +66,12 @@ class MainWindow(QMainWindow):
         if last_manga:
             # select it!
             idx = self.ui.list_manga.findText(last_manga)
-            self.ui.list_manga.setCurrentIndex(idx)
+            if idx > 0:
+                self.ui.list_manga.setCurrentIndex(idx)
+            else:
+                # force the loading if it is already idx 0
+                # the index changed slot wouldn't be called if we set the index to 0
+                self.loadVolumeFiles()
 
         # load previous window geometry
         geom = self.settings.load("geometry")
@@ -73,9 +83,6 @@ class MainWindow(QMainWindow):
             self.showMenu(True)
             self.showNormal()
             self.resizeEvent(None)
-
-    def saveCurrentMangaSettings(self):
-        pass
 
     def selectedManga(self):
         manga = self.ui.list_manga.currentText()
@@ -105,8 +112,8 @@ class MainWindow(QMainWindow):
         page = self.ui.list_page.currentText()
         return page
 
-    def saveMangaSettings(self):
-        self.settings.storeMangaSetting(self.selectedManga(), [self.selectedVolumeIdx(), self.selectedChapterIndex(), self.selectedPageIndex()])
+    def saveMangaSettings(self, manga):
+        self.settings.storeMangaSetting(manga, [self.selectedVolumeIdx(), self.selectedChapterIndex(), self.selectedPageIndex()])
 
     def loadMangaSettings(self):
         manga_settings = self.settings.loadMangaSettings(self.selectedManga())
@@ -126,6 +133,10 @@ class MainWindow(QMainWindow):
         self.ui.page_label.setText("%d/%d" % (self.ui.list_page.currentIndex()+1, self.ui.list_page.count()))
 
     def loadVolumeFiles(self):
+        if self.manga_before:
+            self.saveMangaSettings(self.manga_before)
+        self.manga_before = self.selectedManga()
+
         self.manga_pages.clear()
         self.manga_chaps.clear()
         self.manga_vols.clear()
@@ -151,7 +162,7 @@ class MainWindow(QMainWindow):
                 self.ui.list_volume.clear()
                 self.ui.list_volume.addItems(sorted([key for key, value in self.manga_vols.items()]))
                 self.updateIndices()
-
+                
             self.loadMangaSettings()
         else:
             self.clearImage()
@@ -223,6 +234,8 @@ class MainWindow(QMainWindow):
 
     def loadMangaBooks(self):
         # scan each configured directory for top-level mangas
+        self.clearMangaData()
+        self.ui.list_manga.clear()
         manga_list = []
         for path in self.settings.settings[MANGA_DIRS]:
             p = os.path.abspath(path)
@@ -246,7 +259,7 @@ class MainWindow(QMainWindow):
             self.ui.manga_image_label.setPixmap(self.manga_image)
             self.resizeEvent(None)
 
-            self.saveMangaSettings()
+            self.saveMangaSettings(self.selectedManga())
 
     def clearImage(self):
         self.manga_image = QPixmap()
@@ -282,13 +295,13 @@ class MainWindow(QMainWindow):
         self.settings.store("last_manga", self.selectedManga())
 
         # save last vol/chap/page in manga settings
-        self.saveCurrentMangaSettings()
+        self.saveMangaSettings(self.selectedManga())
 
         # save general settings
         self.settings.save()
 
         # save manga settings
-        self.saveMangaSettings()
+        self.saveMangaSettings(self.selectedManga())
 
         QMainWindow.closeEvent(self, event);
 
@@ -408,6 +421,7 @@ class MainWindow(QMainWindow):
 
     def on_settings(self):
         self.settings.execDialog()
+        self.loadMangaBooks()
 
     def on_about(self):
         QMessageBox.information(self, "About PyMangaReader", "MIT License")

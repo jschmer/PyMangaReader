@@ -1,6 +1,8 @@
 import sys
-
-from PyQt5.QtCore import (QSettings, QCoreApplication)
+import os
+#
+from PyQt5.QtCore import (QSettings)
+from PyQt5.QtGui import (QGuiApplication)
 
 from PyMangaSettingsDialog import *
 
@@ -8,27 +10,29 @@ from PyMangaSettingsDialog import *
 COMPANY = "jschmer"
 APPLICATION = "PyMangaReader"
 
-MANGASETTINGSFILE = "C:/Projects/Py/PyMangaReader/manga_settings.ini";
-
 class Settings():
 
     # the default application settings
     settings = {
                 MANGA_DIRS : [],
-                MANGA_SETTINGS : "MangaData",
+                MANGA_SETTINGS_PATH : os.path.dirname(os.path.realpath(__file__)) + "/manga_settings.ini",
                 UNRAR_EXE : "unrar"
                }
 
     # load settings from system
-    appsettings = QSettings(COMPANY, APPLICATION)
-    mangasettings = QSettings(MANGASETTINGSFILE, QSettings.IniFormat)
+    appsettings = None
+    mangasettings = None
 
     def __init__(self):
         # load configuration/settings
+        self.appsettings = QSettings(COMPANY, APPLICATION)
         config = self.appsettings.value("settings")
         if config:
             # merge settings
             self.settings = dict(list(self.settings.items()) + list(config.items()))
+
+        # load manga specific settings
+        self.mangasettings = QSettings(self.settings[MANGA_SETTINGS_PATH], QSettings.IniFormat)
 
     def save(self):
         """ save settings into system """

@@ -111,7 +111,10 @@ class MainWindow(QMainWindow):
             print("Loading volume data from", manga_path)
 
             vol_layer = Layer(manga_path).open()
-            if vol_layer.names:
+            if not vol_layer.image is None:
+                self.loadImage(vol_layer.image)
+                self.updateIndices()
+            elif vol_layer.names is not None:
                 self.manga_vols = vol_layer.names
 
                 # add to gui
@@ -134,7 +137,10 @@ class MainWindow(QMainWindow):
             print("Loading chapter data from", chap_path)
 
             chap_layer = chap_path.open()
-            if chap_layer.names:
+            if not chap_layer.image is None:
+                self.loadImage(chap_layer.image)
+                self.updateIndices()
+            elif chap_layer.names is not None:
                 self.manga_chaps = chap_layer.names
 
                 # add to gui
@@ -154,7 +160,10 @@ class MainWindow(QMainWindow):
             print("Loading page data from", page_path)
 
             page_layer = page_path.open()
-            if page_layer.names:
+            if not page_layer.image is None:
+                self.loadImage(page_layer.image)
+                self.updateIndices()
+            elif page_layer.names is not None:
                 self.manga_pages = page_layer.names
 
                 # add to gui

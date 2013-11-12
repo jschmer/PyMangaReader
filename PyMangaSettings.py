@@ -1,12 +1,14 @@
 import sys
 
-from PyQt5.QtCore import (QSettings)
+from PyQt5.QtCore import (QSettings, QCoreApplication)
 
 from PyMangaSettingsDialog import *
 
 # application tags
 COMPANY = "jschmer"
 APPLICATION = "PyMangaReader"
+
+MANGASETTINGSFILE = "C:/Projects/Py/PyMangaReader/manga_settings.ini";
 
 class Settings():
 
@@ -18,11 +20,12 @@ class Settings():
                }
 
     # load settings from system
-    qsettings = QSettings(COMPANY, APPLICATION)
+    appsettings = QSettings(COMPANY, APPLICATION)
+    mangasettings = QSettings(MANGASETTINGSFILE, QSettings.IniFormat)
 
     def __init__(self):
         # load configuration/settings
-        config = self.qsettings.value("settings")
+        config = self.appsettings.value("settings")
         if config:
             # merge settings
             self.settings = dict(list(self.settings.items()) + list(config.items()))
@@ -30,10 +33,6 @@ class Settings():
     def save(self):
         """ save settings into system """
         self.store("settings", self.settings)
-
-    def refresh(self):
-        """ load application settings from system """
-        self.qsettings = QSettings(COMPANY, APPLICATION)
 
     def execDialog(self):
         """ execute dialog and apply settings if pressed OK """
@@ -44,11 +43,17 @@ class Settings():
 
     def store(self, tag, value):
         """ store data in application settings """
-        self.qsettings.setValue(tag, value);
+        self.appsettings.setValue(tag, value);
 
     def load(self, tag):
         """
         load data from application settings 
         returns None if tag not available
         """
-        return self.qsettings.value(tag)
+        return self.appsettings.value(tag)
+
+    def storeMangaSetting(self, manga, value):
+        self.mangasettings.setValue(manga, value)
+
+    def loadMangaSettings(self, manga):
+        return self.mangasettings.value(manga)

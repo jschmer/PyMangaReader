@@ -81,17 +81,43 @@ class MainWindow(QMainWindow):
         manga = self.ui.list_manga.currentText()
         return manga
 
+    def selectedVolumeIdx(self):
+        vol = self.ui.list_volume.currentIndex()
+        return vol
+
     def selectedVolume(self):
         vol = self.ui.list_volume.currentText()
         return vol
+
+    def selectedChapterIndex(self):
+        chap = self.ui.list_chapter.currentIndex()
+        return chap
 
     def selectedChapter(self):
         chap = self.ui.list_chapter.currentText()
         return chap
 
+    def selectedPageIndex(self):
+        page = self.ui.list_page.currentIndex()
+        return page
+
     def selectedPage(self):
         page = self.ui.list_page.currentText()
         return page
+
+    def saveMangaSettings(self):
+        self.settings.storeMangaSetting(self.selectedManga(), [self.selectedVolumeIdx(), self.selectedChapterIndex(), self.selectedPageIndex()])
+
+    def loadMangaSettings(self):
+        manga_settings = self.settings.loadMangaSettings(self.selectedManga())
+        if manga_settings:
+            volidx, chapteridx, pageidx = manga_settings
+            try:
+                self.selectEntry(self.ui.list_volume, int(volidx))
+                self.selectEntry(self.ui.list_chapter, int(chapteridx))
+                self.selectEntry(self.ui.list_page, int(pageidx))
+            except NoElementsError:
+                pass
 
     def updateIndices(self):
         # update idx/count text
@@ -124,7 +150,9 @@ class MainWindow(QMainWindow):
                 # add to gui
                 self.ui.list_volume.clear()
                 self.ui.list_volume.addItems(sorted([key for key, value in self.manga_vols.items()]))
-                self.updateIndices()      
+                self.updateIndices()
+
+            self.loadMangaSettings()
         else:
             self.clearImage()
 
@@ -210,13 +238,15 @@ class MainWindow(QMainWindow):
     def loadImage(self, image):
         """ load an image of type QImage """
         if not isinstance(image, QImage):
-            print("cancelling print for", image)
+            #print("cancelling print for", image)
             return
 
         if not image.isNull():
             self.manga_image = QPixmap.fromImage(image)
             self.ui.manga_image_label.setPixmap(self.manga_image)
             self.resizeEvent(None)
+
+            self.saveMangaSettings()
 
     def clearImage(self):
         self.manga_image = QPixmap()
@@ -256,6 +286,9 @@ class MainWindow(QMainWindow):
 
         # save general settings
         self.settings.save()
+
+        # save manga settings
+        self.saveMangaSettings()
 
         QMainWindow.closeEvent(self, event);
 

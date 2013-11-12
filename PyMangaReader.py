@@ -3,7 +3,7 @@ import os
 
 from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream)
 from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform)
-from PyQt5.QtWidgets import (QDialog, QComboBox, QLabel, QScrollArea, QAction, QApplication, QFileDialog, QMainWindow, QMessageBox, QTextEdit, QSizePolicy)
+from PyQt5.QtWidgets import (QToolTip, QDialog, QComboBox, QLabel, QScrollArea, QAction, QApplication, QFileDialog, QMainWindow, QMessageBox, QTextEdit, QSizePolicy)
 
 from ui_mainwindow import Ui_MainWindow
 from PyMangaSettings import *
@@ -19,6 +19,8 @@ def isSupportedArchive(file):
                     return False
             return True
 
+class NoElementsError(BaseException): pass
+
 class MainWindow(QMainWindow):
     settings = Settings()
     manga_image = None
@@ -30,6 +32,8 @@ class MainWindow(QMainWindow):
 
     def __init__(self, fileName=None):
         super(MainWindow, self).__init__()
+
+        super(MainWindow, self).setFocusPolicy(Qt.StrongFocus)
 
         # Set up the user interface from Designer
         self.ui = Ui_MainWindow()
@@ -108,7 +112,7 @@ class MainWindow(QMainWindow):
         selected = self.selectedManga()
         if selected in self.manga_books:
             manga_path = self.manga_books[selected]
-            print("Loading volume data from", manga_path)
+            #print("Loading volume data from", manga_path)
 
             vol_layer = Layer(manga_path).open()
             if not vol_layer.image is None:
@@ -134,7 +138,7 @@ class MainWindow(QMainWindow):
         selected = self.selectedVolume()
         if selected in self.manga_vols:
             chap_path = self.manga_vols[selected]
-            print("Loading chapter data from", chap_path)
+            #print("Loading chapter data from", chap_path)
 
             chap_layer = chap_path.open()
             if not chap_layer.image is None:
@@ -157,7 +161,7 @@ class MainWindow(QMainWindow):
         selected = self.selectedChapter()
         if selected in self.manga_chaps:
             page_path = self.manga_chaps[selected]
-            print("Loading page data from", page_path)
+            #print("Loading page data from", page_path)
 
             page_layer = page_path.open()
             if not page_layer.image is None:
@@ -209,9 +213,7 @@ class MainWindow(QMainWindow):
             print("cancelling print for", image)
             return
 
-        if image.isNull():
-            QMessageBox.warning(self, "Error", "Cannot load %s." % image_path)
-        else:
+        if not image.isNull():
             self.manga_image = QPixmap.fromImage(image)
             self.ui.manga_image_label.setPixmap(self.manga_image)
             self.resizeEvent(None)
@@ -228,7 +230,6 @@ class MainWindow(QMainWindow):
         self.ui.list_page.clear()
         self.ui.list_chapter.clear()
         self.ui.list_volume.clear()
-
 
     def resizeEvent(self, event):
         """ fit image into label """
@@ -296,9 +297,62 @@ class MainWindow(QMainWindow):
             self.showMenu(True)
             self.showNormal()
 
+    def selectEntry(self, combobox, delta):
+        if not isinstance(combobox, QComboBox):
+            print("Dammit, not a ComboBox?!")
+            return
+
+        idx = combobox.currentIndex()
+        count = combobox.count()
+
+        if count == 0:
+            raise NoElementsError
+
+        new_idx = idx + delta
+        if new_idx < 0 or new_idx >= count:
+            return False
+        else:
+            combobox.setCurrentIndex(new_idx)
+            return True
+
+    def keyReleaseEvent(self, event):
+        """
+        Keyboard stuff:
+        Left    Previous page
+        Right   Next page
+        """
+        if event.key() == Qt.Key_Left:
+            # go to previous page
+            # if the page-list doesn't have any entries then try to go to the previous "chapter"
+            # if the chapter-list doesn't have any entries then try to go to the previous "volume"
+            boxes = [self.ui.list_page, self.ui.list_chapter, self.ui.list_volume]
+            for box in boxes:
+                try:
+                    if self.selectEntry(box, -1) == False:
+                        # show toast with info
+                        QToolTip.showText(self.ui.manga_image_label.mapToGlobal(QPoint(0, 0)), "already at first page!")
+                    break
+                except NoElementsError:
+                    continue
+        elif event.key() == Qt.Key_Right:
+            # go to next page
+            # if the page-list doesn't have any entries then try to go to the next "chapter"
+            # if the chapter-list doesn't have any entries then try to go to the next "volume"
+            boxes = [self.ui.list_page, self.ui.list_chapter, self.ui.list_volume]
+            for box in boxes:
+                try:
+                    if self.selectEntry(box, 1) == False:
+                        # show toast with info
+                        QToolTip.showText(self.ui.manga_image_label.mapToGlobal(QPoint(0, 0)), "already at last page!")
+                    break
+                except NoElementsError:
+                    continue
+
     def keyPressEvent(self, event):
         """
-        Keyboard stuf::
+        Keyboard stuff:
+        Left    Previous page
+        Right   Next page
         R       Rotate CW
         E       Rotate CCW
         F       Toggle Fullscreen
@@ -315,6 +369,9 @@ class MainWindow(QMainWindow):
             self.showMenu()
         elif event.key() == Qt.Key_Escape:
             self.close()
+
+    def mouseDoubleClickEvent(self, event):
+        self.toggleFullscreen()
 
     def on_settings(self):
         self.settings.execDialog()

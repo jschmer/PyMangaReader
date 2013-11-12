@@ -69,9 +69,9 @@ class Layer():
             # throw out deep files, we use only top level files
             # TODO: if only one directory then recurse into it
             self.names = []
-            pattern = re.compile("[\\/].")
+            #pattern = re.compile("[\\/].")
             for name in names:
-                if not pattern.search(name):
+                #if not pattern.search(name):
                     self.names.append( (name, Layer(name, self.zip)) )
                 
             #self.names = []
@@ -81,19 +81,19 @@ class Layer():
             self.names = dict(self.names)
             pass
         else:
-            # got an image, do something!
             if self.zip:
+                # got an image, load the image from the zip!
                 if isImage(self.path):
-                    print("image! :C", self.path)
+                    #print("image! :C", self.path)
                     file = self.zip.open(self.path)
                     self.image = QImage()
                     if not self.image.loadFromData(file.read()):
                         self.image = None
                 else:
-                    print("archive dir! :C", self.path)
+                    #print("archive dir! :C", self.path)
+
                     # got a directory in an archive
                     # list all names under path
-
                     names = self.zip.names
 
                     self.names = []

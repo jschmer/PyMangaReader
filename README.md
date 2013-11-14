@@ -1,13 +1,9 @@
 PyMangaReader
 =============
 
-Simple reader for mangas.
+Simple reader for mangas.  
 Reads images (manga pages) from directories, zips and rars (only if the UnRAR utility is provided).
 Supported image formats are jpg and png.
-
-### Dependencies
-[Python3] and [PyQt5]  
-If you want to read rar archives you need the [UnRAR] utility
 
 ### Features
 - Configurable base directories to read mangas from
@@ -28,11 +24,15 @@ MangaName (directory)
 ```
 but can also handle shallower hierarchies.
 
+### Dependencies
+[Python3] and [PyQt5]  
+If you want to read rar archives you need the [UnRAR] utility
+
 ### Building
 Checkout the repository, launch compile_ui.py to compile Qt designer and resource files to python and run `python PyMangaReader.pyw`.
 
-To generate a native package with all dependencies, install [cx_Freeze] and run `python setup.py build`
-NOTE: If you happen to encounter an error launching PyMangaReader with a generated package saying that Qt can't find a platform plugin, make sure that the library `libEGL.dll` is there!
+To generate a native package with all dependencies, install [cx_Freeze] and run `python setup.py build`  
+**NOTE**: If you happen to encounter an error launching PyMangaReader with a generated package saying that Qt can't find a platform plugin, make sure that the library `libEGL.dll` is there!
 
 
 [Python3]: http://www.python.org/

@@ -1,7 +1,7 @@
 PyMangaReader
 =============
 
-Lightweight reader for mangas.
+Simple reader for mangas.
 Reads images (manga pages) from directories, zips and rars (only if the UnRAR utility is provided).
 Supported image formats are jpg and png.
 
@@ -26,6 +26,7 @@ MangaName (directory)
 |  |- chapter ...
 |- Volume ...
 ```
+but can also handle shallower hierarchies.
 
 [Python3]: http://www.python.org/
 [PyQt5]: http://www.riverbankcomputing.co.uk/software/pyqt/download5

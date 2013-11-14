@@ -1,7 +1,9 @@
 import os
 import zipfile
 import re
+
 from PyQt5.QtGui import QImage
+from PyMangaLogger import log
 
 supported_archives = ["", ".zip"]
 def isSupportedArchive(file):
@@ -80,10 +82,6 @@ class Layer():
                 # we are already inside a zip
                 if isImage(self.path):
                     # got an image, load the image from the zip!
-
-                    # TODO: log this somewhere?
-                    #print("image! :C", self.path)
-
                     file = self.zip.open(self.path)
                     self.image = QImage()
                     if not self.image.loadFromData(file.read()):
@@ -104,6 +102,6 @@ class Layer():
                 self.image = QImage(self.path)
 
             else:
-                print("Unknown file:", self.path)
+                log.warning("Unknown file: %s" % self.path)
 
         return self

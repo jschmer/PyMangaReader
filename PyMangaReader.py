@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (QToolTip, QDialog, QComboBox, QLabel, QScrollArea, 
 from ui_mainwindow import Ui_MainWindow
 from PyMangaSettings import *
 from PyMangaLayer import *
+from PyMangaLogger import log, setupLoggerFromCmdArgs
 
 supported_archives = [".zip"]
 def isSupportedArchive(file):
@@ -141,10 +142,12 @@ class MainWindow(QMainWindow):
     # SETTINGS STUFF
     def saveMangaSettings(self, manga):
         """ save current selected volume/chapter/page for given manga """
+        log.info("Saving manga page settings for %s" % manga)
         self.settings.storeMangaSetting(manga, [self.selectedVolumeIdx(), self.selectedChapterIndex(), self.selectedPageIndex()])
 
     def loadMangaSettings(self):
         """ select last viewed volume/chapter/manga for current manga """
+        log.info("Loading manga page settings for %s" % self.selectedManga())
         manga_settings = self.settings.loadMangaSettings(self.selectedManga())
         if manga_settings:
             volidx, chapteridx, pageidx = manga_settings
@@ -157,6 +160,7 @@ class MainWindow(QMainWindow):
 
     def loadLastSelectedManga(self):
         last_manga = self.settings.load("last_manga")
+        log.info("Loading last selected manga: %s" % last_manga)
         if last_manga:
             # select it!
             idx = self.dropdown_manga.findText(last_manga)
@@ -224,13 +228,12 @@ class MainWindow(QMainWindow):
         selected = self.selectedManga()
         if selected not in self.manga_books:
             # current selected manga is not in internal dict buffer?
-            # -> clear image and TODO: provide some feedback?
+            # -> clear image
             self.clearImage() 
         else:
             manga_path = self.manga_books[selected]
 
-            # TODO: log this somewhere?
-            #print("Loading volume data from", manga_path)
+            log.info("Loading volume data from %s" % manga_path)
 
             # load the volumes under manga_path with the Layer proxy
             vol_layer = Layer(manga_path).open()
@@ -262,13 +265,12 @@ class MainWindow(QMainWindow):
         selected = self.selectedVolume()
         if selected not in self.manga_vols:
             # current selected volume is not in internal dict buffer?
-            # -> clear image and TODO: provide some feedback?
+            # -> clear image
             self.clearImage()
         else:
             chap_path = self.manga_vols[selected]
 
-            # TODO: log this somewhere?
-            #print("Loading chapter data from", chap_path)
+            log.info("Loading chapter data from %s" % chap_path.path)
 
             # load the chapters under chap_path with the Layer proxy
             chap_layer = chap_path.open()
@@ -297,13 +299,12 @@ class MainWindow(QMainWindow):
         selected = self.selectedChapter()
         if selected not in self.manga_chaps:
             # current selected volume is not in internal dict buffer?
-            # -> clear image and TODO: provide some feedback?
+            # -> clear image
             self.clearImage()
         else:
             page_path = self.manga_chaps[selected]
 
-            # TODO: log this somewhere?
-            #print("Loading page data from", page_path)
+            log.info("Loading page data from %s" % page_path.path)
 
             page_layer = page_path.open()
             if page_layer.image is not None:
@@ -338,8 +339,6 @@ class MainWindow(QMainWindow):
     def loadImage(self, image):
         """ Load an image of type QImage """
         if not isinstance(image, QImage):
-            # TODO: log this somewhere?
-            #print("cancelling print for", image)
             return
 
         # if the image is not empty
@@ -425,8 +424,7 @@ class MainWindow(QMainWindow):
         raises  NoElementsError if the combobox doesn't have any entries at all
         """
         if not isinstance(combobox, QComboBox):
-            # TODO: log this somewhere?
-            print("Dammit, not a ComboBox?!")
+            log.error("Dammit, not a ComboBox?!")
             return
 
         idx = combobox.currentIndex()
@@ -545,10 +543,12 @@ class MainWindow(QMainWindow):
             """)
 
 if __name__ == '__main__':
+    setupLoggerFromCmdArgs(sys.argv)
+
     try:
         app = QApplication(sys.argv)
         mainWin = MainWindow()
         mainWin.show()
         sys.exit(app.exec_())
     except Exception as ex:
-        print(ex)
+        log.exception(ex)

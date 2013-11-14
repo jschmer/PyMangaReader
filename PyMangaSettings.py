@@ -5,6 +5,7 @@ from PyQt5.QtCore import (QSettings)
 from PyQt5.QtGui import (QGuiApplication)
 
 from PyMangaSettingsDialog import *
+from PyMangaLogger import log
 
 # application tags
 COMPANY = "jschmer"
@@ -42,7 +43,7 @@ class Settings():
         """ execute dialog and apply settings if pressed OK """
         dialog = SettingsDialog(self.settings)
         if dialog.exec_():
-            print("Saving settings...")
+            log.info("Saving settings...")
             self.settings = dialog.settings
             return True
         return False

@@ -1,8 +1,8 @@
 import sys
 import os
 
-from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream)
-from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform)
+from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream, QEvent)
+from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform, QKeyEvent)
 from PyQt5.QtWidgets import (QToolTip, QDialog, QComboBox, QLabel, QScrollArea, QAction, QApplication, QFileDialog, QMainWindow, QMessageBox, QTextEdit, QSizePolicy)
 
 from ui_mainwindow import Ui_MainWindow
@@ -179,6 +179,28 @@ class MainWindow(QMainWindow):
         self.ui.volume_label .setText("%d/%d" % (self.dropdown_volume.currentIndex() + 1,  self.dropdown_volume.count()))
         self.ui.chapter_label.setText("%d/%d" % (self.dropdown_chapter.currentIndex() + 1, self.dropdown_chapter.count()))
         self.ui.page_label   .setText("%d/%d" % (self.dropdown_page.currentIndex() + 1,    self.dropdown_page.count()))
+
+        # hide empty boxes/labels
+        if self.dropdown_volume.count() == 0:
+            self.dropdown_volume.hide()
+            self.ui.volume_label.hide()
+        else:
+            self.dropdown_volume.show()
+            self.ui.volume_label.show()
+
+        if self.dropdown_chapter.count() == 0:
+            self.dropdown_chapter.hide()
+            self.ui.chapter_label.hide()
+        else:
+            self.dropdown_chapter.show()
+            self.ui.chapter_label.show()
+
+        if self.dropdown_page.count() == 0:
+            self.dropdown_page.hide()
+            self.ui.page_label.hide()
+        else:
+            self.dropdown_page.show()
+            self.ui.page_label.show()
 
     def loadMangaBooks(self):
         """ Scan each configured manga directory for top-level mangas """
@@ -528,6 +550,15 @@ class MainWindow(QMainWindow):
 
     def mouseDoubleClickEvent(self, event):
         self.toggleFullscreen()
+
+    def wheelEvent(self, event):
+        """ Trigger left or right arrow key based on wheel direction """
+        delta = event.angleDelta().y()
+        if delta > 0:
+            self.keyReleaseEvent(QKeyEvent(QEvent.KeyRelease, Qt.Key_Left, Qt.NoModifier))
+        elif delta < 0:
+            self.keyReleaseEvent(QKeyEvent(QEvent.KeyRelease, Qt.Key_Right, Qt.NoModifier))
+        pass
 
     def on_settings(self):
         """ Show settings dialog """

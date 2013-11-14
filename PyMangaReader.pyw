@@ -229,6 +229,7 @@ class MainWindow(QMainWindow):
         self.dropdown_manga.currentIndexChanged.connect(self.loadVolumeFiles)
 
         self.loadLastSelectedManga()
+        self.loadVolumeFiles()
 
     def loadVolumeFiles(self):
         """

@@ -28,6 +28,14 @@ MangaName (directory)
 ```
 but can also handle shallower hierarchies.
 
+### Building
+Checkout the repository, launch compile_ui.py to compile Qt designer and resource files to python and run `python PyMangaReader.pyw`.
+
+To generate a native package with all dependencies, install [cx_Freeze] and run `python setup.py build`
+NOTE: If you happen to encounter an error launching PyMangaReader with a generated package saying that Qt can't find a platform plugin, make sure that the library `libEGL.dll` is there!
+
+
 [Python3]: http://www.python.org/
 [PyQt5]: http://www.riverbankcomputing.co.uk/software/pyqt/download5
 [UnRAR]: http://www.rarlab.com/rar_add.htm
+[cx_Freeze]: http://cx-freeze.readthedocs.org/en/latest/index.html

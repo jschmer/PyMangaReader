@@ -1,4 +1,5 @@
 import sys
+import os
 
 from PyQt5.QtCore import (Qt)
 from PyQt5.QtWidgets import (QDialog, QFileDialog)
@@ -11,6 +12,8 @@ MANGA_SETTINGS_PATH = "mangasettingspath"
 UNRAR_EXE = "unrarexepath"
 
 class SettingsDialog(QDialog):
+
+    settings = None
 
     def __init__(self, settings):
         super(SettingsDialog, self).__init__()
@@ -54,7 +57,11 @@ class SettingsDialog(QDialog):
         self.updateData()
 
     def selectUnrarPath(self):
-        file = QFileDialog.getOpenFileName(self, "Select Unrar executable", self.settings[UNRAR_EXE])
+        exe = ""
+        if os.name == "nt":
+            exe = "UnRAR (UnRAR.exe)"
+
+        file = QFileDialog.getOpenFileName(self, "Select Unrar executable", self.settings[UNRAR_EXE], exe)
         if len(file[0]) > 0:
             self.settings[UNRAR_EXE] = file[0]
         self.updateData()
@@ -66,6 +73,3 @@ class SettingsDialog(QDialog):
 
         self.ui.labelMangaSettings.setText(self.settings[MANGA_SETTINGS_PATH])
         self.ui.labelUnrarExe.setText(self.settings[UNRAR_EXE])
-
-    def getSettings(self):
-        return self.settings

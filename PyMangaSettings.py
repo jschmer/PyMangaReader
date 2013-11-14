@@ -1,6 +1,6 @@
 import sys
 import os
-#
+
 from PyQt5.QtCore import (QSettings)
 from PyQt5.QtGui import (QGuiApplication)
 
@@ -11,7 +11,7 @@ COMPANY = "jschmer"
 APPLICATION = "PyMangaReader"
 
 class Settings():
-
+    """ Settings class for storing and retrieving settings """
     # the default application settings
     settings = {
                 MANGA_DIRS : [],
@@ -19,23 +19,23 @@ class Settings():
                 UNRAR_EXE : "unrar"
                }
 
-    # load settings from system
+    # the QSettings objects
     appsettings = None
     mangasettings = None
 
     def __init__(self):
-        # load configuration/settings
+        # load application settings (fixed location)
         self.appsettings = QSettings(COMPANY, APPLICATION)
         config = self.appsettings.value("settings")
         if config:
             # merge settings
             self.settings = dict(list(self.settings.items()) + list(config.items()))
 
-        # load manga specific settings
+        # load manga specific settings from MANGA_SETTINGS_PATH as ini file
         self.mangasettings = QSettings(self.settings[MANGA_SETTINGS_PATH], QSettings.IniFormat)
 
     def save(self):
-        """ save settings into system """
+        """ save application settings into system """
         self.store("settings", self.settings)
 
     def execDialog(self):
@@ -43,7 +43,9 @@ class Settings():
         dialog = SettingsDialog(self.settings)
         if dialog.exec_():
             print("Saving settings...")
-            self.settings = dialog.getSettings()
+            self.settings = dialog.settings
+            return True
+        return False
 
     def store(self, tag, value):
         """ store data in application settings """

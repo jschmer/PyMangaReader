@@ -21,10 +21,11 @@ class Zip(object):
     zipfile = None
 
     def __init__(self, file):
+        """ open zip archive pointed to by file """
         self.load(file)
-        pass
 
     def load(self, file):
+        """ open zip archive pointed to by file """
         if not os.path.isfile(file):
             raise RuntimeError("%s is not a zipfile!" % file)
         self.zf = zipfile.ZipFile(file, "r")
@@ -37,73 +38,72 @@ class Zip(object):
 
 class Layer():
     """
-    Generic Layer that provides a consistent view for archives and directories
+    Generic Layer that provides a consistent view for archives, directories, files
     """
-    supported_archives = [".zip"]
-    names = None
-    path = None
-    zip = None
-    image = None
+    path  = None # path to the archive
+    names = None # for archive names
+    zip   = None # cache for the opened zip
+    image = None # in case we hit an image
 
     def __init__(self, _path, _zip = None):
-        self.zip = _zip
+        self.zip  = _zip
         self.path = _path
         
     def open(self):
-        # if path is directory
+        """
+        Opens the path the layer was constructed with
+        Handles the type of the path appropriately
+        """
         if os.path.isdir(self.path):
             # load names in directory
             dir = os.listdir(self.path)
+
+            # save all names in directory
             self.names = []
             for d in dir:
-                #if isSupportedArchive(d):
                 self.names.append((d, Layer(os.path.join(self.path, d))))
             self.names = dict(self.names)
-            pass
 
         elif ".zip" in self.path:
-            # load archive and names
+            # load archive and its content names
             self.zip = Zip(self.path)
             names = self.zip.names
 
-            # throw out deep files, we use only top level files
-            # TODO: if only one directory then recurse into it
             self.names = []
-            #pattern = re.compile("[\\/].")
             for name in names:
-                #if not pattern.search(name):
-                    self.names.append( (name, Layer(name, self.zip)) )
-                
-            #self.names = []
-            #for name in names:
-            #    self.names.append( (name, Layer(name, self.zip)) )
-
+                self.names.append( (name, Layer(name, self.zip)) )
             self.names = dict(self.names)
-            pass
+
         else:
+            # no directory, no zip: are we already inside a zip?
             if self.zip:
-                # got an image, load the image from the zip!
+                # we are already inside a zip
                 if isImage(self.path):
+                    # got an image, load the image from the zip!
+
+                    # TODO: log this somewhere?
                     #print("image! :C", self.path)
+
                     file = self.zip.open(self.path)
                     self.image = QImage()
                     if not self.image.loadFromData(file.read()):
                         self.image = None
                 else:
-                    #print("archive dir! :C", self.path)
-
-                    # got a directory in an archive
-                    # list all names under path
+                    # got a directory in an archive, list all names under path
                     names = self.zip.names
 
                     self.names = []
                     for name in names:
+                         # make sure we only get subpaths and not the current path
                         if self.path in name and len(self.path) != len(name):
                             self.names.append( (name, Layer(name, self.zip)) )
 
                     self.names = dict(self.names)
 
-            else:
+            elif isImage(self.path):
                 self.image = QImage(self.path)
+
+            else:
+                print("Unknown file:", self.path)
 
         return self

@@ -6,6 +6,7 @@ from PyQt5.QtGui import (QGuiApplication)
 
 from PyMangaSettingsDialog import *
 from PyMangaLogger import log
+from PyMangaLayer import *
 
 # application tags
 COMPANY = "jschmer"
@@ -34,6 +35,8 @@ class Settings():
 
         # load manga specific settings from MANGA_SETTINGS_PATH as ini file
         self.mangasettings = QSettings(self.settings[MANGA_SETTINGS_PATH], QSettings.IniFormat)
+
+        setupUnrar(self.settings[UNRAR_EXE])
 
     def save(self):
         """ save application settings into system """

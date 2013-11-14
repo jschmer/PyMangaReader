@@ -4,7 +4,9 @@ import os
 from PyQt5.QtCore import (Qt)
 from PyQt5.QtWidgets import (QDialog, QFileDialog)
 
+from PyMangaLayer import *
 from ui_settings import Ui_SettingsDialog
+
 
 # setting tags
 MANGA_DIRS = "mangadirs"
@@ -64,7 +66,9 @@ class SettingsDialog(QDialog):
         file = QFileDialog.getOpenFileName(self, "Select Unrar executable", self.settings[UNRAR_EXE], exe)
         if len(file[0]) > 0:
             self.settings[UNRAR_EXE] = file[0]
+            setupUnrar(self.settings[UNRAR_EXE])
         self.updateData()
+
 
     def updateData(self):
         self.ui.listMangaDirs.clear()

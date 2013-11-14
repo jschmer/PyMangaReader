@@ -374,11 +374,6 @@ class MainWindow(QMainWindow):
             # trigger resizing
             self.resizeEvent(None)
 
-            # save manga settings on page change! :)
-            # a page change also happens when changing volumes and chapters, so this is the
-            # only place to save these settings
-            self.saveMangaSettings(self.selectedManga())
-
     # CLEARER
     def clearImage(self):
         """ Clear the current image """

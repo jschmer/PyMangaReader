@@ -83,9 +83,11 @@ class Zip(object):
 
 class Rar(object):
     rf = None
+    file = None
 
     def __init__(self, file):
         """ open zip archive pointed to by file """
+        self.file = file
         self.load(file)
 
     def load(self, file):
@@ -159,6 +161,7 @@ class Layer():
                     file = self.zip.open(self.path)
                     self.image = QImage()
                     if not self.image.loadFromData(file.read()):
+                        log.error("Failed loading image '%s' ind archive '%s'" % (self.path, self.zip.zf.file))
                         self.image = None
                 else:
                     # got a directory in an archive, list all names under path
@@ -172,7 +175,7 @@ class Layer():
 
                     self.names = dict(self.names)
 
-            if isRARactive() and self.rar:
+            elif isRARactive() and self.rar:
                 # we are already inside a rar
                 if isImage(self.path):
                     # got an image, load the image from the zip!

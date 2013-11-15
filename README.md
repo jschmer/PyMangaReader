@@ -25,7 +25,7 @@ MangaName (directory)
 but can also handle shallower hierarchies.
 
 ## Dependencies
-[Python3], [PyQt5] and [rarfile]
+[Python3], [PyQt5] and [rarfile]  
 If you want to read rar archives you also need the [UnRAR] utility
 
 ## Building

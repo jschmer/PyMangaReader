@@ -1,5 +1,7 @@
 import sys
 import os
+import threading
+import time
 
 from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream, QEvent)
 from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform, QKeyEvent)
@@ -39,6 +41,8 @@ class MainWindow(QMainWindow):
     dropdown_chapter = None
     dropdown_page = None
 
+    toast_thr = threading.Thread()
+
     def __init__(self, fileName=None):
         """
         init MainWindow:
@@ -64,6 +68,12 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
         self.setWindowTitle(APPLICATION)
         self.resize(800, 600) # arbitrary default size
+
+        self.toast_label = QLabel("TOAST MESSAGE", self.ui.scrollArea)
+        self.toast_label.setStyleSheet("background-color: rgb(255, 255, 255);\nborder: 1px solid rgb(0, 0, 0);\ncolor: rgb(0, 0, 0);")
+        self.toast_label.setAlignment(Qt.AlignCenter)
+        self.toast_label.setMargin(5)
+        self.toast_label.hide()
 
         # load previous window geometry
         geom = self.settings.load("geometry")
@@ -458,8 +468,27 @@ class MainWindow(QMainWindow):
             combobox.setCurrentIndex(new_idx)
             return True
 
+    def toast(self, label, duration):
+        sleep_step = 0.01
+
+        log.info("Showing toast for %d seconds" % duration)
+        label.show()
+        while not self.stop_toast and duration > 0:
+            time.sleep(sleep_step)
+            duration -= sleep_step
+        label.hide()
+        log.info("Hiding toast")
+
     def showToast(self, message):
-        QToolTip.showText(self.ui.manga_image_label.mapToGlobal(QPoint(0, 0)), message)
+        while self.toast_thr and self.toast_thr.is_alive():
+            self.stop_toast = True
+            self.toast_thr.join()
+
+        self.toast_label.setText(message)
+
+        self.stop_toast = False
+        self.toast_thr = threading.Thread(target=self.toast, args=(self.toast_label, 3))
+        self.toast_thr.start()
 
     # EVENT HANDLER
     def resizeEvent(self, event):

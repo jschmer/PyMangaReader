@@ -571,7 +571,10 @@ class MainWindow(QMainWindow):
         elif event.key() == Qt.Key_H:
             self.showMenu()
         elif event.key() == Qt.Key_Escape:
-            self.close()
+            if not self.isFullScreen():
+                self.close()
+            else:
+                self.toggleFullscreen()
 
     def mouseDoubleClickEvent(self, event):
         self.toggleFullscreen()

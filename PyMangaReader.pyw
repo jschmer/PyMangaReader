@@ -102,6 +102,14 @@ class MainWindow(QMainWindow):
         self.dropdown_chapter.currentIndexChanged.connect(self.loadPageFiles)
         self.dropdown_page   .currentIndexChanged.connect(self.loadPage)
 
+        # "Connect" dropdown box hierarchy for selecting e.g. the next volume if we are at the last page
+        self.dropdown_volume.parent = None
+        self.dropdown_volume.child = self.dropdown_chapter
+        self.dropdown_chapter.parent = self.dropdown_volume
+        self.dropdown_chapter.child = self.dropdown_page
+        self.dropdown_page.parent = self.dropdown_chapter
+        self.dropdown_page.child = None
+
         # load mangas in manga directory setting, needs self.dropdown_manga.currentIndexChanged to be connected
         self.loadMangaBooks()
 
@@ -536,8 +544,23 @@ class MainWindow(QMainWindow):
             for box in boxes:
                 try:
                     if self.selectEntry(box, -1) == False:
-                        # couldn't select previous entry -> show toast with info
-                        self.showToast("Already at first page!")
+                        # already at first entry in box -> try to decrement its parents until one can be decremented
+                        # and show toast with info
+                        cur_box = box.parent
+
+                        while cur_box and self.selectEntry(cur_box, -1) == False:
+                            cur_box = cur_box.parent
+                        if cur_box == None:
+                            self.showToast("Already at first page of the Manga!")
+                            break
+                        else:
+                            self.showToast("Prev: %s" % cur_box.currentText())
+
+                        # also select last entry in each child boxes (as we are coming from above)
+                        cur_box = cur_box.child
+                        while cur_box and self.selectEntry(cur_box, cur_box.count() - 1) == True:
+                            cur_box = cur_box.child
+
                     break
                 except NoElementsError:
                     continue
@@ -549,8 +572,18 @@ class MainWindow(QMainWindow):
             for box in boxes:
                 try:
                     if self.selectEntry(box, 1) == False:
-                        # couldn't select previous entry -> show toast with info
-                        self.showToast("Already at last page!")
+                        # already at last entry in box -> try to advance its parents until one can be advanced
+                        # and show toast with info
+                        cur_box = box.parent
+
+                        while cur_box and self.selectEntry(cur_box, 1) == False:
+                            cur_box = cur_box.parent
+                        if cur_box == None:
+                            self.showToast("Already at last page of the Manga!")
+                            break
+                        else:
+                            self.showToast("Next: %s" % cur_box.currentText())
+
                     break
                 except NoElementsError:
                     continue

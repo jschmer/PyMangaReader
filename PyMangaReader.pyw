@@ -108,6 +108,8 @@ class MainWindow(QMainWindow):
         # select last viewed manga
         self.loadLastSelectedManga()
 
+        self.refreshGUI()
+
     # GETTER
     def selectedMangaIdx(self):
         """ current selected volume index in the dropdown box """
@@ -183,7 +185,7 @@ class MainWindow(QMainWindow):
                 self.loadVolumeFiles()
 
     # LOADER
-    def updateIndices(self):
+    def refreshGUI(self):
         """ Refresh the idx/count labels in front of the dropdown boxes """
         # update idx/count text
         self.ui.volume_label .setText("%d/%d" % (self.dropdown_volume.currentIndex() + 1,  self.dropdown_volume.count()))
@@ -281,7 +283,7 @@ class MainWindow(QMainWindow):
                 # add volume names to dropdown, was already cleared before
                 self.dropdown_volume.addItems(sorted([key for key, value in self.manga_vols.items()]))
                 
-            self.updateIndices()     # refresh the idx/count labels in front of the dropdowns
+            self.refreshGUI()     # refresh the idx/count labels in front of the dropdowns
             self.loadMangaSettings() # load last selected volume/chapter/page for current manga
 
     def loadChapterFiles(self):
@@ -318,7 +320,7 @@ class MainWindow(QMainWindow):
                 # add chapter names to dropdown, was already cleared before
                 self.dropdown_chapter.addItems(sorted([key for key, value in self.manga_chaps.items()]))
            
-            self.updateIndices() # refresh the idx/count labels in front of the dropdowns
+            self.refreshGUI() # refresh the idx/count labels in front of the dropdowns
     
     def loadPageFiles(self):
         """
@@ -351,7 +353,7 @@ class MainWindow(QMainWindow):
                 # add page names to dropdown, was already cleared before
                 self.dropdown_page.addItems(sorted([key for key, value in self.manga_pages.items()]))
 
-            self.updateIndices() # refresh the idx/count labels in front of the dropdowns
+            self.refreshGUI() # refresh the idx/count labels in front of the dropdowns
 
     def loadPage(self, idx = None):
         """
@@ -367,7 +369,7 @@ class MainWindow(QMainWindow):
         image_layer = self.manga_pages[self.selectedPage()]  
         self.loadImage(image_layer.open().image)
 
-        self.updateIndices()
+        self.refreshGUI()
 
     def loadImage(self, image):
         """ Load an image of type QImage """
@@ -592,6 +594,7 @@ class MainWindow(QMainWindow):
         """ Show settings dialog """
         if self.settings.execDialog():
             self.loadMangaBooks()
+        self.refreshGUI()
 
     def on_about(self):
         """ Show about box """

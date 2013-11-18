@@ -26,6 +26,8 @@ class NoElementsError(BaseException): pass
 
 class MainWindow(QMainWindow):
     manga_image = None  # holds the real image for display
+    absolute_rotation = 0
+
     manga_before = None # cache for last selected manga
     settings = None
 
@@ -116,6 +118,12 @@ class MainWindow(QMainWindow):
         # select last viewed manga
         self.loadLastSelectedManga()
 
+        # load previous image absolute rotation
+        rot = self.settings.load("absolute_rotation")
+        if rot != None:
+            self.rotate(rot)
+
+        # refresh GUI
         self.refreshGUI()
 
     # GETTER
@@ -413,7 +421,8 @@ class MainWindow(QMainWindow):
 
     # HELPER
     def rotate(self, deg):
-        """ Rotate image by deg """
+        """ Rotate image by deg, always relative to the rotation before """
+        self.absolute_rotation = (self.absolute_rotation + deg) % 360
         rotate = QTransform().rotate(deg)
         self.manga_image = self.manga_image.transformed(rotate);
         self.resizeEvent(None)
@@ -518,6 +527,9 @@ class MainWindow(QMainWindow):
         """ Close the window but save settings before that! """
         # save window geometry
         self.settings.store("geometry", self.saveGeometry());
+
+        # save absolute image rotation
+        self.settings.store("absolute_rotation", self.absolute_rotation)
         
         # save last vol/chap/page for current manga
         self.saveMangaSettings(self.selectedManga())

@@ -24,6 +24,12 @@ def isSupportedArchive(file):
 
 class NoElementsError(BaseException): pass
 
+def rotate(image, deg):
+    if not isinstance(image, QPixmap):
+        raise BaseException
+    rot = QTransform().rotate(deg)
+    return image.transformed(rot)
+
 class MainWindow(QMainWindow):
     manga_image = None  # holds the real image for display
     absolute_rotation = 0
@@ -86,7 +92,7 @@ class MainWindow(QMainWindow):
             # fullscreen at startup doesn't happen this way
             self.showMenu(True)
             self.showNormal()
-            self.resizeEvent(None)
+            self.refreshMangaImage()
 
         # give an alias to the dropdown boxes for easier name changes
         self.dropdown_manga   = self.ui.list_manga
@@ -395,19 +401,16 @@ class MainWindow(QMainWindow):
         # if the image is not empty
         if not image.isNull():
             # convert to qpixmap and save in internal buffer
-            self.manga_image = QPixmap.fromImage(image)
+            self.manga_image = rotate(QPixmap.fromImage(image), self.absolute_rotation)
 
-            # show the image label on the manga image
-            self.ui.manga_image_label.setPixmap(self.manga_image)
-
-            # trigger resizing
-            self.resizeEvent(None)
+            # trigger resizing (includes setting/showing the image)
+            self.refreshMangaImage()
 
     # CLEARER
     def clearImage(self):
         """ Clear the current image """
         self.manga_image = QPixmap()
-        self.resizeEvent(None)
+        self.refreshMangaImage()
 
     def clearMangaData(self):
         """ Clear all data for selected manga """
@@ -423,8 +426,11 @@ class MainWindow(QMainWindow):
     def rotate(self, deg):
         """ Rotate image by deg, always relative to the rotation before """
         self.absolute_rotation = (self.absolute_rotation + deg) % 360
-        rotate = QTransform().rotate(deg)
-        self.manga_image = self.manga_image.transformed(rotate);
+        rot = QTransform().rotate(deg)
+        self.manga_image = self.manga_image.transformed(rot);
+        self.refreshMangaImage()
+
+    def refreshMangaImage(self):
         self.resizeEvent(None)
         
     def geometryUpdateHack(self):
@@ -447,7 +453,7 @@ class MainWindow(QMainWindow):
         else:
             self.ui.groupBox.hide()
 
-        self.resizeEvent(None)
+        self.refreshMangaImage()
 
     def toggleFullscreen(self):
         """

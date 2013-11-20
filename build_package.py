@@ -1,7 +1,7 @@
 import shutil, os, sys, re
 from compile_ui import compileUIFiles
 from setup import build
-from get_latest_git_tag import getLatestGitTag
+from get_latest_git_tag import generateVersionForCurrentCommit
 import zipfile
 
 # zipping an entire directory
@@ -11,7 +11,7 @@ def zipdir(path, zip):
             zip.write(os.path.join(root, file))
 
 def buildPackage():
-  version = getLatestGitTag()
+  version = generateVersionForCurrentCommit()
 
   # compile Qt ui and resource files
   compileUIFiles()

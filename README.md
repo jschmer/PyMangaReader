@@ -28,23 +28,13 @@ but can also handle shallower hierarchies.
 ## Keyboard Bindings
 Coming Soon...
 
-## Dependencies
-[Python3], [PyQt5] and [rarfile]  
-If you want to read rar archives you also need the [UnRAR] utility
-
-## Building
-Checkout the repository, launch compile_ui.py to compile Qt designer and resource files to python and run `python PyMangaReader.pyw`.
-
-To generate a native package with all dependencies, install [cx_Freeze] and run `python setup.py build`  
-**NOTE**: If you happen to encounter an error launching PyMangaReader with a generated package saying that Qt can't find a platform plugin, make sure that the library `libEGL` is there!
+## Packages
+Precompiled packages for Windows and Linux are available [here][Releases].  
+Check the **INSTALL.platform.md** file for installation instructions.  
 
 ## License
 This software is licensed under the [MIT license].  
 © 2013 Jens Schmer
 
 [MIT license]: http://opensource.org/licenses/MIT
-[Python3]: http://www.python.org/
-[PyQt5]: http://www.riverbankcomputing.co.uk/software/pyqt/download5
-[rarfile]: https://pypi.python.org/pypi/rarfile/
-[UnRAR]: http://www.rarlab.com/rar_add.htm
-[cx_Freeze]: http://cx-freeze.readthedocs.org/en/latest/index.html
+[Releases]: https://github.com/jschmer/PyMangaReader/releases

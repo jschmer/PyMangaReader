@@ -54,7 +54,7 @@ class SettingsDialog(QDialog):
 
     def selectMangaSettingsPath(self):
         file = QFileDialog.getSaveFileName(self, "Select Manga Settings File", self.settings[MANGA_SETTINGS_PATH])
-        if len(file) > 0:
+        if len(file[0]) > 0:
             self.settings[MANGA_SETTINGS_PATH] = file[0]
         self.updateData()
 

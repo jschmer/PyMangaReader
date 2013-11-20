@@ -33,9 +33,11 @@ class Settings():
             # merge settings
             self.settings = dict(list(self.settings.items()) + list(config.items()))
 
+        self.refreshMangaSettings()
+
+    def refreshMangaSettings(self):
         # load manga specific settings from MANGA_SETTINGS_PATH as ini file
         self.mangasettings = QSettings(self.settings[MANGA_SETTINGS_PATH], QSettings.IniFormat)
-
         setupUnrar(self.settings[UNRAR_EXE])
 
     def save(self):
@@ -44,10 +46,19 @@ class Settings():
 
     def execDialog(self):
         """ execute dialog and apply settings if pressed OK """
-        dialog = SettingsDialog(self.settings)
+        dialog = SettingsDialog(self.settings.copy())
         if dialog.exec_():
             log.info("Saving settings...")
+            oldpath = self.settings[MANGA_SETTINGS_PATH]
+            newpath = dialog.settings[MANGA_SETTINGS_PATH]
+
+            # check if we have a new path
+            if oldpath != newpath:
+                # move old file to new location
+                move(oldpath, newpath)
+
             self.settings = dialog.settings
+            self.refreshMangaSettings()
             return True
         return False
 

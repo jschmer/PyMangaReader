@@ -656,7 +656,7 @@ class MainWindow(QMainWindow):
             PyMangaReader
 
             Version: %s
-            Release under the MIT License
+            Released under the MIT License
             Copyright 2013 Jens Schmer
             """
             % FULL_VERSION

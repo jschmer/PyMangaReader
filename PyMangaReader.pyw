@@ -127,7 +127,7 @@ class MainWindow(QMainWindow):
         # load previous image absolute rotation
         rot = self.settings.load("absolute_rotation")
         if rot != None:
-            self.rotate(rot)
+            self.rotate(int(rot))
 
         # refresh GUI
         self.refreshGUI()

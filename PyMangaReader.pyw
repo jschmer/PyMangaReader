@@ -133,6 +133,8 @@ class MainWindow(QMainWindow):
         # refresh GUI
         self.refreshGUI()
 
+        self.checkForEmptyMangas()
+
     # GETTER
     def selectedMangaIdx(self):
         """ current selected volume index in the dropdown box """
@@ -642,11 +644,19 @@ class MainWindow(QMainWindow):
             self.keyReleaseEvent(QKeyEvent(QEvent.KeyRelease, Qt.Key_Right, Qt.NoModifier))
         pass
 
+    def checkForEmptyMangas(self):
+        # ask if settings should be opened if no mangas were found
+        if self.dropdown_manga.count() == 0:
+            answer = QMessageBox.question(self, "Open Settings?", "No Mangas found!\nWould you like to open the settings?", QMessageBox.Yes | QMessageBox.No)
+            if answer == QMessageBox.Yes:
+                self.on_settings()
+
     def on_settings(self):
         """ Show settings dialog """
         if self.settings.execDialog():
             self.loadMangaBooks()
         self.refreshGUI()
+        self.checkForEmptyMangas()
 
     def on_about(self):
         """ Show about box """

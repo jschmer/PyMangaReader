@@ -25,8 +25,21 @@ MangaName (directory)
 ```
 but can also handle shallower hierarchies.
 
-## Keyboard Bindings
-Coming Soon...
+## Hotkeys
+Key | Action
+----|------
+Left  | Flip to previous page
+Right | Flip to next page
+R     | Rotate 90° CW
+E     | Rotate 90° CCW
+F     | Toggle Fullscreen
+H     | Toggle Menu
+ESC   | Quit application (or leave fullscreen)
+
+Mouse | Action
+------|------
+Doubleclick  | Toggle Fullscreen
+Wheel        | Flip to next/previous page
 
 ## Packages
 Precompiled packages for Windows and Linux are available [here][Releases].  

@@ -23,19 +23,30 @@ def buildPackage():
   os.chdir("build")
 
   # determine cx_freeze output folder
-  platforms = {
-               "win32" : "win",
-               "linux2" : "linux"
-              }
-
   is_64bits = sys.maxsize > 2**32
-  arch = None
-  if is_64bits:
-    arch = "amd64"
+  platform_str = None
+  arch_str = None
+  if sys.platform == "win32":
+    if is_64bits:
+      arch_str = "amd64"
+      platform_str = "win"
+    else:
+      arch_str = ""
+      platform_str = "win32"
+  elif sys.platform == "linux":
+    if is_64bits:
+      arch_str = "x86_64"
+    else:
+      arch_str = "i686"
+    platform_str = "linux"
   else:
-    arch = "i686"
+    print("Unsopported platform:", sys.platform)
+    exit(-1)
 
-  arch_desc = platforms[sys.platform] + "-" + arch
+  if arch_str != "":
+    arch_desc = platform_str + "-" + arch_str
+  else:
+    arch_desc = platform_str
 
   freeze_build_output = os.path.abspath("exe." + arch_desc + "-3.3")
   if not os.path.exists(freeze_build_output):
@@ -58,9 +69,14 @@ def buildPackage():
   os.rename(freeze_build_output, package_name)
 
   if sys.platform == "win32":
-    # copy files in build/win-x64-additional-deps to output folder
+    # copy files in build/win-additional-deps to output folder
     print("Copy win32 dependencies...")
-    root = os.path.abspath('win-x64-additional-deps')
+    root = None
+    if is_64bits:
+      root = os.path.abspath('win-additional-deps/x64/')
+    else:
+      root = os.path.abspath('win-additional-deps/x86/')
+
     for file in os.listdir(root):
       src = os.path.join(root, file)
       shutil.copy(src, package_name)

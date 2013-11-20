@@ -10,6 +10,21 @@ def zipdir(path, zip):
         for file in files:
             zip.write(os.path.join(root, file))
 
+X64 = 0
+X86 = 1
+arch = {
+  X64: "x64",
+  X86: "x86"
+      }
+
+WIN = 10
+LINUX = 11
+platform = {
+  WIN: "win",
+  LINUX: "linux"
+      }
+
+
 def buildPackage():
   version = generateVersionForCurrentCommit()
 
@@ -26,18 +41,26 @@ def buildPackage():
   is_64bits = sys.maxsize > 2**32
   platform_str = None
   arch_str = None
+  package_arch = None
+  package_platform = None
   if sys.platform == "win32":
+    package_platform = platform[WIN]
     if is_64bits:
       arch_str = "amd64"
       platform_str = "win"
+      package_arch = arch[X64]
     else:
       arch_str = ""
       platform_str = "win32"
+      package_arch = arch[X86]
   elif sys.platform == "linux":
+    package_platform = platform[LINUX]
     if is_64bits:
       arch_str = "x86_64"
+      package_arch = arch[X64]
     else:
       arch_str = "i686"
+      package_arch = arch[X86]
     platform_str = "linux"
   else:
     print("Unsopported platform:", sys.platform)
@@ -60,8 +83,9 @@ def buildPackage():
       shutil.copy(src, freeze_build_output)
   
   # rename build folder to something more sane 
-  #    exe.win-amd64-3.3 -> PyMangaReader.win-amd64.v0.2
-  package_name = os.path.abspath("PyMangaReader." + arch_desc + "." + version)
+  #    exe.win-amd64-3.3 -> PyMangaReader.[win|linux]-[x86|x64].[vX.Y]
+
+  package_name = os.path.abspath("PyMangaReader." + package_platform + "-" + package_arch + "." + version)
   if os.path.exists(package_name):
     shutil.rmtree(package_name)
 

@@ -11,6 +11,7 @@ from ui_mainwindow import Ui_MainWindow
 from PyMangaSettings import *
 from PyMangaLayer import *
 from PyMangaLogger import log, setupLoggerFromCmdArgs
+from version import FULL_VERSION
 
 supported_archives = [".zip"]
 def isSupportedArchive(file):
@@ -649,11 +650,17 @@ class MainWindow(QMainWindow):
 
     def on_about(self):
         """ Show about box """
-        QMessageBox.information(self,
-            "About PyMangaReader",
+        QMessageBox.about(self,
+            "About",
             """
-            MIT License
-            """)
+            PyMangaReader
+
+            Version: %s
+            Release under the MIT License
+            Copyright 2013 Jens Schmer
+            """
+            % FULL_VERSION
+            )
 
 if __name__ == '__main__':
     setupLoggerFromCmdArgs(sys.argv)

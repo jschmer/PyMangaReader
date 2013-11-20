@@ -2,7 +2,11 @@ import shutil, os, sys, re
 from compile_ui import compileUIFiles
 from setup import build
 from get_latest_git_tag import generateVersionForCurrentCommit
+from tempfile import mkstemp
+from shutil import move
+from os import remove, close
 import zipfile
+
 
 # zipping an entire directory
 def zipdir(path, zip):
@@ -10,24 +14,50 @@ def zipdir(path, zip):
         for file in files:
             zip.write(os.path.join(root, file))
 
+# architecture string mappings for package name
 X64 = 0
 X86 = 1
 arch = {
   X64: "x64",
   X86: "x86"
-      }
+}
 
+# platform string mappings for package name
 WIN = 10
 LINUX = 11
 platform = {
   WIN: "win",
   LINUX: "linux"
-      }
+}
 
+def generateVersionForGUI(version_string):
+  # version file
+  file_path = "version.py"
+  
+  # Create temp file
+  fh, abs_path = mkstemp()
+  
+  # open files
+  new_file = open(abs_path,'w')
+  old_file = open(file_path)
+  
+  for line in old_file:
+    new_file.write(re.sub(r"^FULL_VERSION=.*", 'FULL_VERSION="%s"' % version_string , line))
+  
+  # close files
+  new_file.close()
+  close(fh)
+  old_file.close()
+  
+  # Remove original file and move new file
+  remove(file_path)
+  move(abs_path, file_path)
 
 def buildPackage():
   version = generateVersionForCurrentCommit()
 
+  generateVersionForGUI(version)
+  
   # compile Qt ui and resource files
   compileUIFiles()
 

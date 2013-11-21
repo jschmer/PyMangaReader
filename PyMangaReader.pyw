@@ -4,7 +4,7 @@ import threading
 import time
 
 from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream, QEvent)
-from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform, QKeyEvent)
+from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform, QKeyEvent, QCursor)
 from PyQt5.QtWidgets import (QToolTip, QDialog, QComboBox, QLabel, QScrollArea, QAction, QApplication, QFileDialog, QMainWindow, QMessageBox, QTextEdit, QSizePolicy)
 
 from ui_mainwindow import Ui_MainWindow
@@ -466,9 +466,11 @@ class MainWindow(QMainWindow):
         if the image would only go fullscreen this wouldn't be possible (as far as i know?)
         """
         if not self.isFullScreen():
+            QApplication.setOverrideCursor(QCursor(Qt.BlankCursor))
             self.showMenu(False)
             self.showFullScreen()
         else:
+            QApplication.restoreOverrideCursor();
             self.showMenu(True)
             self.showNormal()
 

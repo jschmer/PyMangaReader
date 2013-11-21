@@ -6,15 +6,33 @@ import rarfile
 from PyQt5.QtGui import QImage
 from PyMangaLogger import log
 
-supported_archives = ["", ".zip"]
+supported_archives = ["", ".zip", ".cbz"]
 def isSupportedArchive(file):
+    global supported_archives
     fileName, fileExtension = os.path.splitext(file)
     if fileExtension not in supported_archives:
         return False
     return True
 
-supported_images = [".png", ".jpg"]
+zip_like_archives = [".zip", ".cbz"]
+def isZip(path):
+    global zip_like_archives
+    fileName, fileExtension = os.path.splitext(path)
+    if fileExtension in zip_like_archives:
+      return True
+    return False
+
+rar_like_archives = [".rar", ".cbr"]
+def isRar(path):
+    global rar_like_archives
+    fileName, fileExtension = os.path.splitext(path)
+    if fileExtension in rar_like_archives:
+      return True
+    return False
+
+supported_images = [".png", ".jpg", ".gif"]
 def isImage(file):
+    global supported_images
     fileName, fileExtension = os.path.splitext(file)
     if fileExtension in supported_images:
         return True
@@ -26,7 +44,12 @@ rarfile.PATH_SEP = '\\'
 
 def isRARactive():
     global supported_archives
-    return "*.rar" in supported_archives
+    rars = [1 for x in supported_archives if x in rar_like_archives]
+    if len(rars) > 0:
+        return True
+    else:
+        return False
+    # return (".rar" in supported_archives) or (".cbr" in supported_archives)
 
 def setupUnrar(unrar_path):
     global supported_archives
@@ -34,13 +57,12 @@ def setupUnrar(unrar_path):
     if unrar is None:
         log.warning("UnRAR executable not accessible: %s" % unrar_path)
         log.warning("Disabling rar archive support...")
-        supported_archives = [x for x in supported_archives if x != "*.rar"]
+        supported_archives = [x for x in supported_archives if x not in rar_like_archives]
     else:
         log.info("UnRAR executable accessible: %s" % unrar)
         log.info("Enabling rar archive support...")
         rarfile.UNRAR_TOOL = unrar
-        if "*.rar" not in supported_archives:
-            supported_archives.append("*.rar")
+        supported_archives += rar_like_archives
 
 def which(program):
     '''
@@ -72,8 +94,6 @@ class Zip(object):
 
     def load(self, file):
         """ open zip archive pointed to by file """
-        if not os.path.isfile(file):
-            raise RuntimeError("%s is not a zipfile!" % file)
         self.zf = zipfile.ZipFile(file, "r")
 
         self.names = self.zf.namelist()
@@ -132,7 +152,7 @@ class Layer():
                 self.names.append((d, Layer(os.path.join(self.path, d))))
             self.names = dict(self.names)
 
-        elif ".zip" in self.path:
+        elif isZip(self.path):
             # load archive and its content names
             self.zip = Zip(self.path)
             names = self.zip.names
@@ -142,7 +162,7 @@ class Layer():
                 self.names.append( (name, Layer(name, self.zip, self.rar)) )
             self.names = dict(self.names)
 
-        elif isRARactive() and ".rar" in self.path:
+        elif isRARactive() and isRar(self.path):
             # load archive and its content names
             self.rar = Rar(self.path)
             names = self.rar.names

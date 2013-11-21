@@ -296,20 +296,23 @@ class MainWindow(QMainWindow):
             log.info("Loading volume data from %s" % manga_path)
 
             # load the volumes under manga_path with the Layer proxy
-            vol_layer = Layer(manga_path).open()
-            if vol_layer.image is not None:
-                # manga_path is an image! show it!
-                self.loadImage(vol_layer.image)
+            try:
+                vol_layer = Layer(manga_path).open()
+                if vol_layer.image is not None:
+                    # manga_path is an image! show it!
+                    self.loadImage(vol_layer.image)
                 
-            elif vol_layer.names is not None:
-                # got some volumes, save them in internal dict for future lookup
-                self.manga_vols = vol_layer.names # this is saved as (name, path) dict
+                elif vol_layer.names is not None:
+                    # got some volumes, save them in internal dict for future lookup
+                    self.manga_vols = vol_layer.names # this is saved as (name, path) dict
 
-                # add volume names to dropdown, was already cleared before
-                self.dropdown_volume.addItems(sorted([key for key, value in self.manga_vols.items()]))
+                    # add volume names to dropdown, was already cleared before
+                    self.dropdown_volume.addItems(sorted([key for key, value in self.manga_vols.items()]))
                 
-            self.refreshGUI()     # refresh the idx/count labels in front of the dropdowns
-            self.loadMangaSettings() # load last selected volume/chapter/page for current manga
+                self.refreshGUI()     # refresh the idx/count labels in front of the dropdowns
+                self.loadMangaSettings() # load last selected volume/chapter/page for current manga
+            except BaseException as ex:
+                self.showToast("Failed loading %s" % manga_path)
 
     def loadChapterFiles(self):
         """
@@ -333,19 +336,22 @@ class MainWindow(QMainWindow):
             log.info("Loading chapter data from %s" % chap_path.path)
 
             # load the chapters under chap_path with the Layer proxy
-            chap_layer = chap_path.open()
-            if chap_layer.image is not None:
-                # chap_path is an image! show it!
-                self.loadImage(chap_layer.image)
+            try:
+                chap_layer = chap_path.open()
+                if chap_layer.image is not None:
+                    # chap_path is an image! show it!
+                    self.loadImage(chap_layer.image)
 
-            elif chap_layer.names is not None:
-                # got some chapters, save them in internal dict for future lookup
-                self.manga_chaps = chap_layer.names # (name, path) dict!
+                elif chap_layer.names is not None:
+                    # got some chapters, save them in internal dict for future lookup
+                    self.manga_chaps = chap_layer.names # (name, path) dict!
 
-                # add chapter names to dropdown, was already cleared before
-                self.dropdown_chapter.addItems(sorted([key for key, value in self.manga_chaps.items()]))
+                    # add chapter names to dropdown, was already cleared before
+                    self.dropdown_chapter.addItems(sorted([key for key, value in self.manga_chaps.items()]))
            
-            self.refreshGUI() # refresh the idx/count labels in front of the dropdowns
+                self.refreshGUI() # refresh the idx/count labels in front of the dropdowns
+            except BaseException as ex:
+                self.showToast("Failed loading %s" % chap_path.path)
     
     def loadPageFiles(self):
         """
@@ -366,19 +372,22 @@ class MainWindow(QMainWindow):
 
             log.info("Loading page data from %s" % page_path.path)
 
-            page_layer = page_path.open()
-            if page_layer.image is not None:
-                # chap_path is an image! show it!
-                self.loadImage(page_layer.image)
+            try:
+                page_layer = page_path.open()
+                if page_layer.image is not None:
+                    # chap_path is an image! show it!
+                    self.loadImage(page_layer.image)
                 
-            elif page_layer.names is not None:
-                # got some pages, save them in internal dict for future lookup
-                self.manga_pages = page_layer.names # (name, path) dict!
+                elif page_layer.names is not None:
+                    # got some pages, save them in internal dict for future lookup
+                    self.manga_pages = page_layer.names # (name, path) dict!
 
-                # add page names to dropdown, was already cleared before
-                self.dropdown_page.addItems(sorted([key for key, value in self.manga_pages.items()]))
+                    # add page names to dropdown, was already cleared before
+                    self.dropdown_page.addItems(sorted([key for key, value in self.manga_pages.items()]))
 
-            self.refreshGUI() # refresh the idx/count labels in front of the dropdowns
+                self.refreshGUI() # refresh the idx/count labels in front of the dropdowns
+            except BaseException as ex:
+                self.showToast("Failed loading %s" % page_path.path)
 
     def loadPage(self, idx = None):
         """
@@ -392,7 +401,11 @@ class MainWindow(QMainWindow):
 
         # open selected page
         image_layer = self.manga_pages[self.selectedPage()]  
-        self.loadImage(image_layer.open().image)
+
+        try:
+            self.loadImage(image_layer.open().image)
+        except BaseException as ex:
+            self.showToast("Failed loading %s" % image_layer.path)
 
         self.refreshGUI()
 

@@ -2,7 +2,7 @@ import sys, os, threading, time
 
 from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream, QEvent, pyqtSignal)
 from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform, QKeyEvent, QCursor)
-from PyQt5.QtWidgets import (QToolTip, QDialog, QComboBox, QLabel, QScrollArea, QAction, QApplication, QFileDialog, QMainWindow, QMessageBox, QTextEdit, QSizePolicy)
+from PyQt5.QtWidgets import (QShortcut, QToolTip, QDialog, QComboBox, QLabel, QScrollArea, QAction, QApplication, QFileDialog, QMainWindow, QMessageBox, QTextEdit, QSizePolicy)
 
 from ui_mainwindow import Ui_MainWindow
 from PyMangaSettings import *
@@ -47,6 +47,8 @@ class MainWindow(QMainWindow):
     dropdown_page = None
 
     toast_thr = threading.Thread()
+
+    shortcuts = dict()
 
     def __init__(self, fileName=None):
         """
@@ -136,8 +138,37 @@ class MainWindow(QMainWindow):
 
         # refresh GUI
         self.refreshGUI()
-
         self.checkForEmptyMangas()
+        self.setupShortcuts()
+
+    def setupShortcuts(self):
+        rotate_right = QShortcut(QKeySequence("R"), self)
+        rotate_right.activated.connect(self.rotate_right)
+        self.shortcuts["rotate_right"] = rotate_right
+
+        rotate_left = QShortcut(QKeySequence("E"), self)
+        rotate_left.activated.connect(self.rotate_left)
+        self.shortcuts["rotate_left"] = rotate_left
+
+        pageflip_prev = QShortcut(QKeySequence(Qt.Key_Left), self)
+        pageflip_prev.activated.connect(self.pageflipPrev)
+        self.shortcuts["pageflip_prev"] = pageflip_prev
+
+        pageflip_next = QShortcut(QKeySequence(Qt.Key_Right), self)
+        pageflip_next.activated.connect(self.pageflipNext)
+        self.shortcuts["pageflip_next"] = pageflip_next
+
+        close = QShortcut(QKeySequence(Qt.Key_Escape), self)
+        close.activated.connect(self.tryClose)
+        self.shortcuts["close"] = close
+
+        toggle_fullscreen = QShortcut(QKeySequence(Qt.Key_F), self)
+        toggle_fullscreen.activated.connect(self.toggleFullscreen)
+        self.shortcuts["toggle_fullscreen"] = toggle_fullscreen
+
+        toggle_menu = QShortcut(QKeySequence(Qt.Key_H), self)
+        toggle_menu.activated.connect(self.showMenu)
+        self.shortcuts["toggle_menu"] = toggle_menu
 
     # GETTER
     def selectedMangaIdx(self):
@@ -542,91 +573,7 @@ class MainWindow(QMainWindow):
         self.settings.save()
 
         QMainWindow.closeEvent(self, event);
-
-    def keyReleaseEvent(self, event):
-        """
-        Keyboard stuff:
-        Left    Previous page
-        Right   Next page
-
-        Arrow keys somehow don't generate a keyPressEvent :(
-        That's why they are handled here
-        """
-        if event.key() == Qt.Key_Left:
-            # go to previous page
-            # if the page-list doesn't have any entries then try to go to the previous "chapter"
-            # if the chapter-list doesn't have any entries then try to go to the previous "volume"
-            boxes = [self.dropdown_page, self.dropdown_chapter, self.dropdown_volume]
-            for box in boxes:
-                try:
-                    if self.selectEntry(box, -1) == False:
-                        # already at first entry in box -> try to decrement its parents until one can be decremented
-                        # and show toast with info
-                        cur_box = box.parent
-
-                        while cur_box and self.selectEntry(cur_box, -1) == False:
-                            cur_box = cur_box.parent
-                        if cur_box == None:
-                            self.showToast("Already at first page of the Manga!")
-                            break
-                        else:
-                            self.showToast("Prev: %s" % cur_box.currentText())
-
-                        # also select last entry in each child boxes (as we are coming from above)
-                        cur_box = cur_box.child
-                        while cur_box and self.selectEntry(cur_box, cur_box.count() - 1) == True:
-                            cur_box = cur_box.child
-
-                    break
-                except NoElementsError:
-                    continue
-        elif event.key() == Qt.Key_Right:
-            # go to next page
-            # if the page-list doesn't have any entries then try to go to the next "chapter"
-            # if the chapter-list doesn't have any entries then try to go to the next "volume"
-            boxes = [self.dropdown_page, self.dropdown_chapter, self.dropdown_volume]
-            for box in boxes:
-                try:
-                    if self.selectEntry(box, 1) == False:
-                        # already at last entry in box -> try to advance its parents until one can be advanced
-                        # and show toast with info
-                        cur_box = box.parent
-
-                        while cur_box and self.selectEntry(cur_box, 1) == False:
-                            cur_box = cur_box.parent
-                        if cur_box == None:
-                            self.showToast("Already at last page of the Manga!")
-                            break
-                        else:
-                            self.showToast("Next: %s" % cur_box.currentText())
-
-                    break
-                except NoElementsError:
-                    continue
-
-    def keyPressEvent(self, event):
-        """
-        Keyboard stuff:
-        R       Rotate CW
-        E       Rotate CCW
-        F       Toggle Fullscreen
-        H       Show/Hide Menu
-        ESC     Quit application
-        """
-        if event.key() == Qt.Key_R:
-            self.rotate(90)    
-        elif event.key() == Qt.Key_E:
-            self.rotate(-90)
-        elif event.key() == Qt.Key_F:
-            self.toggleFullscreen()
-        elif event.key() == Qt.Key_H:
-            self.showMenu()
-        elif event.key() == Qt.Key_Escape:
-            if not self.isFullScreen():
-                self.close()
-            else:
-                self.toggleFullscreen()
-
+            
     def wheelEvent(self, event):
         """ Trigger left or right arrow key based on wheel direction """
         delta = event.angleDelta().y()
@@ -663,6 +610,72 @@ class MainWindow(QMainWindow):
             """
             % FULL_VERSION
             )
+
+    # Keyboard shortcut functions
+    def tryClose(self):
+        if not self.isFullScreen():
+            self.close()
+        else:
+            self.toggleFullscreen()
+
+    def rotate_right(self):
+        self.rotate(90)
+
+    def rotate_left(self):
+        self.rotate(-90)
+
+    def pageflipPrev(self):
+        # go to previous page
+        # if the page-list doesn't have any entries then try to go to the previous "chapter"
+        # if the chapter-list doesn't have any entries then try to go to the previous "volume"
+        boxes = [self.dropdown_page, self.dropdown_chapter, self.dropdown_volume]
+        for box in boxes:
+            try:
+                if self.selectEntry(box, -1) == False:
+                    # already at first entry in box -> try to decrement its parents until one can be decremented
+                    # and show toast with info
+                    cur_box = box.parent
+
+                    while cur_box and self.selectEntry(cur_box, -1) == False:
+                        cur_box = cur_box.parent
+                    if cur_box == None:
+                        self.showToast("Already at first page of the Manga!")
+                        break
+                    else:
+                        self.showToast("Prev: %s" % cur_box.currentText())
+
+                    # also select last entry in each child boxes (as we are coming from above)
+                    cur_box = cur_box.child
+                    while cur_box and self.selectEntry(cur_box, cur_box.count() - 1) == True:
+                        cur_box = cur_box.child
+
+                break
+            except NoElementsError:
+                continue
+
+    def pageflipNext(self):
+        # go to next page
+        # if the page-list doesn't have any entries then try to go to the next "chapter"
+        # if the chapter-list doesn't have any entries then try to go to the next "volume"
+        boxes = [self.dropdown_page, self.dropdown_chapter, self.dropdown_volume]
+        for box in boxes:
+            try:
+                if self.selectEntry(box, 1) == False:
+                    # already at last entry in box -> try to advance its parents until one can be advanced
+                    # and show toast with info
+                    cur_box = box.parent
+
+                    while cur_box and self.selectEntry(cur_box, 1) == False:
+                        cur_box = cur_box.parent
+                    if cur_box == None:
+                        self.showToast("Already at last page of the Manga!")
+                        break
+                    else:
+                        self.showToast("Next: %s" % cur_box.currentText())
+
+                break
+            except NoElementsError:
+                continue
 
 if __name__ == '__main__':
     setupLoggerFromCmdArgs(sys.argv)

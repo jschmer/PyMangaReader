@@ -1,6 +1,8 @@
 import sys
 import os
 
+from shutil import move
+
 from PyQt5.QtCore import (QSettings)
 from PyQt5.QtGui import (QGuiApplication)
 

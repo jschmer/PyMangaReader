@@ -1,6 +1,6 @@
 import os
 import zipfile
-import re
+import re, io
 import rarfile
 
 from PyQt5.QtGui import QImage
@@ -10,33 +10,25 @@ supported_archives = ["", ".zip", ".cbz"]
 def isSupportedArchive(file):
     global supported_archives
     fileName, fileExtension = os.path.splitext(file)
-    if fileExtension not in supported_archives:
-        return False
-    return True
+    return fileExtension.lower() in supported_archives
 
 zip_like_archives = [".zip", ".cbz"]
 def isZip(path):
     global zip_like_archives
     fileName, fileExtension = os.path.splitext(path)
-    if fileExtension in zip_like_archives:
-      return True
-    return False
+    return fileExtension.lower() in zip_like_archives
 
 rar_like_archives = [".rar", ".cbr"]
 def isRar(path):
     global rar_like_archives
     fileName, fileExtension = os.path.splitext(path)
-    if fileExtension in rar_like_archives:
-      return True
-    return False
+    return fileExtension.lower() in rar_like_archives
 
 supported_images = [".png", ".jpg", ".gif"]
 def isImage(file):
     global supported_images
     fileName, fileExtension = os.path.splitext(file)
-    if fileExtension in supported_images:
-        return True
-    return False
+    return fileExtension.lower() in supported_images
 
 # UnRAR stuff
 rarfile.UNRAR_TOOL = "unrar"
@@ -45,11 +37,7 @@ rarfile.PATH_SEP = '\\'
 def isRARactive():
     global supported_archives
     rars = [1 for x in supported_archives if x in rar_like_archives]
-    if len(rars) > 0:
-        return True
-    else:
-        return False
-    # return (".rar" in supported_archives) or (".cbr" in supported_archives)
+    return len(rars) > 0
 
 def setupUnrar(unrar_path):
     global supported_archives
@@ -57,6 +45,7 @@ def setupUnrar(unrar_path):
     if unrar is None:
         log.warning("UnRAR executable not accessible: %s" % unrar_path)
         log.warning("Disabling rar archive support...")
+        rarfile.UNRAR_TOOL = None
         supported_archives = [x for x in supported_archives if x not in rar_like_archives]
     else:
         log.info("UnRAR executable accessible: %s" % unrar)
@@ -86,23 +75,7 @@ def which(program):
     return None
 
 class Zip(object):
-    zf = None
-
-    def __init__(self, file):
-        """ open zip archive pointed to by file """
-        self.load(file)
-
-    def load(self, file):
-        """ open zip archive pointed to by file """
-        self.zf = zipfile.ZipFile(file, "r")
-
-        self.names = self.zf.namelist()
-
-    def open(self, name):
-        return self.zf.open(name, "r")
-
-class Rar(object):
-    rf = None
+    zipfile = None
     file = None
 
     def __init__(self, file):
@@ -112,113 +85,113 @@ class Rar(object):
 
     def load(self, file):
         """ open zip archive pointed to by file """
-        if not os.path.isfile(file):
-            raise RuntimeError("%s is not a zipfile!" % file)
-        self.rf = rarfile.RarFile(file, "r")
-
-        self.names = self.rf.namelist()
+        self.zipfile = zipfile.ZipFile(file, "r")
+        self.names = self.zipfile.namelist()
 
     def open(self, name):
-        return self.rf.open(name, "r")
+        return io.BytesIO(self.zipfile.read(name))
 
+class Rar(object):
+    rarfile = None
+    file = None
+
+    def __init__(self, file):
+        """ open zip archive pointed to by file """
+        self.file = file
+        self.load(file)
+
+    def load(self, file):
+        """ open zip archive pointed to by file """
+        self.rarfile = rarfile.RarFile(file, "r")
+        self.names = self.rarfile.namelist()
+
+    def open(self, name):
+        return io.BytesIO(self.rarfile.read(name))
 
 class Layer():
     """
     Generic Layer that provides a consistent view for archives, directories, files
     """
-    path  = None # path to the archive
-    names = None # for archive names
-    zip   = None # cache for an opened zip
-    rar   = None # cache for an opened rar
-    image = None # in case we hit an image
+    path    = None # path to the archive
+    archive = None # cache for an opened archive
 
-    def __init__(self, _path, _zip = None, _rar = None):
-        self.zip  = _zip
-        self.rar  = _rar
-        self.path = _path
+    def __init__(self, _path, _archive = None):
+        self.archive = _archive
+        self.path    = _path
         
     def open(self):
         """
         Opens the path the layer was constructed with
         Handles the type of the path appropriately
+        and return a list of pairs with (direntry, Layer)
         """
-        if os.path.isdir(self.path):
+        entries = None
+        if isImage(self.path):
+            # got an image, load it!
+            if self.archive:
+                # load the image from the archives!
+                log.info("Open image '%s' in archive '%s'" % (self.path, self.archive.file))
+                file = self.archive.open(self.path)
+                image = QImage()
+                if not image.loadFromData(file.read()):
+                    log.error("Failed loading image '%s' in archive '%s'" % (self.path, self.archive.file))
+                    return None
+                return image
+            else:
+                log.info("Open image '%s' from filesystem" % self.path)
+                return QImage(self.path)
+
+        elif isZip(self.path):
+            # got a zipfile, open it!
+            if self.archive:
+                log.info("Open zip '%s' in archive '%s'" % (self.path, self.archive.file))
+                file = self.archive.open(self.path)
+                archive = Zip(file)
+            else:
+                log.info("Open zip '%s' from filesystem" % self.path)
+                archive = Zip(self.path)
+
+            names = archive.names
+
+            name_pairs = []
+            for name in names:
+                if isRar(name) or isZip(name) or isImage(name):
+                    name_pairs.append( (name, Layer(name, archive)) )
+            entries = dict(name_pairs)
+
+        elif isRar(self.path) and isRARactive():
+            # got a rarfile, open it!
+            if self.archive:
+                log.info("Open rar '%s' in archive '%s'" % (self.path, self.archive.file))
+                #file = self.archive.open(self.path)
+                #archive = Rar(file)
+                log.error("Opening rar archives inside another archive isn't supported!")
+                raise RuntimeError("Opening rar archives inside another archive isn't supported!")
+            else:
+                log.info("Open rar '%s' from filesystem" % self.path)
+                archive = Rar(self.path)
+
+            names = archive.names
+
+            name_pairs = []
+            for name in names:
+                if isRar(name) or isZip(name) or isImage(name):
+                    name_pairs.append( (name, Layer(name, archive)) )
+            entries = dict(name_pairs)
+
+        elif os.path.isdir(self.path):
             # load names in directory
+            log.info("Open directory '%s' from filesystem" % self.path)
             dir = os.listdir(self.path)
 
             # save all names in directory
-            self.names = []
+            name_pairs = []
             for d in dir:
-                self.names.append((d, Layer(os.path.join(self.path, d))))
-            self.names = dict(self.names)
-
-        elif isZip(self.path):
-            # load archive and its content names
-            self.zip = Zip(self.path)
-            names = self.zip.names
-
-            self.names = []
-            for name in names:
-                self.names.append( (name, Layer(name, self.zip, self.rar)) )
-            self.names = dict(self.names)
-
-        elif isRARactive() and isRar(self.path):
-            # load archive and its content names
-            self.rar = Rar(self.path)
-            names = self.rar.names
-
-            self.names = []
-            for name in names:
-                self.names.append( (name, Layer(name, self.zip, self.rar)) )
-            self.names = dict(self.names)
+                name_pairs.append((d, Layer(os.path.join(self.path, d))))
+            entries = dict(name_pairs)
 
         else:
-            # no directory, no zip: are we already inside a zip?
-            if self.zip:
-                # we are already inside a zip
-                if isImage(self.path):
-                    # got an image, load the image from the zip!
-                    file = self.zip.open(self.path)
-                    self.image = QImage()
-                    if not self.image.loadFromData(file.read()):
-                        log.error("Failed loading image '%s' ind archive '%s'" % (self.path, self.zip.zf.file))
-                        self.image = None
-                else:
-                    # got a directory in an archive, list all names under path
-                    names = self.zip.names
+            log.warning("Unknown file: %s" % self.path)
+            return None
 
-                    self.names = []
-                    for name in names:
-                         # make sure we only get subpaths and not the current path
-                        if self.path in name and len(self.path) != len(name):
-                            self.names.append( (name, Layer(name, self.zip, self.rar)) )
-
-                    self.names = dict(self.names)
-
-            elif isRARactive() and self.rar:
-                # we are already inside a rar
-                if isImage(self.path):
-                    # got an image, load the image from the zip!
-                    file = self.rar.open(self.path)
-                    self.image = QImage()
-                    if not self.image.loadFromData(file.read()):
-                        self.image = None
-                else:
-                    # got a directory in an archive, list all names under path
-                    names = self.rar.names
-
-                    self.names = []
-                    for name in names:
-                         # make sure we only get subpaths and not the current path
-                        if self.path in name and len(self.path) != len(name):
-                            self.names.append( (name, Layer(name, self.rar, self.rar)) )
-
-                    self.names = dict(self.names)
-
-            elif isImage(self.path):
-                self.image = QImage(self.path)
-
-            else:
-                log.warning("Unknown file: %s" % self.path)
-
-        return self
+        return entries

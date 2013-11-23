@@ -1,7 +1,4 @@
-import sys
-import os
-import threading
-import time
+import sys, os, threading, time
 
 from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream, QEvent)
 from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform, QKeyEvent, QCursor)
@@ -12,16 +9,6 @@ from PyMangaSettings import *
 from PyMangaLayer import *
 from PyMangaLogger import log, setupLoggerFromCmdArgs
 from version import FULL_VERSION
-
-supported_archives = [".zip"]
-def isSupportedArchive(file):
-        if os.path.isdir(file):
-            return True
-        else:
-            for arch in supported_archives:
-                if arch not in file:
-                    return False
-            return True
 
 class NoElementsError(BaseException): pass
 
@@ -292,27 +279,12 @@ class MainWindow(QMainWindow):
             self.clearImage() 
         else:
             manga_path = self.manga_books[selected]
-
             log.info("Loading volume data from %s" % manga_path)
 
-            # load the volumes under manga_path with the Layer proxy
-            try:
-                vol_layer = Layer(manga_path).open()
-                if vol_layer.image is not None:
-                    # manga_path is an image! show it!
-                    self.loadImage(vol_layer.image)
-                
-                elif vol_layer.names is not None:
-                    # got some volumes, save them in internal dict for future lookup
-                    self.manga_vols = vol_layer.names # this is saved as (name, path) dict
+            vol_layer = Layer(manga_path)
 
-                    # add volume names to dropdown, was already cleared before
-                    self.dropdown_volume.addItems(sorted([key for key, value in self.manga_vols.items()]))
-                
-                self.refreshGUI()     # refresh the idx/count labels in front of the dropdowns
-                self.loadMangaSettings() # load last selected volume/chapter/page for current manga
-            except BaseException as ex:
-                self.showToast("Failed loading %s" % manga_path)
+            self.load(vol_layer, self.manga_vols, self.dropdown_volume)
+            self.loadMangaSettings() # load last selected volume/chapter/page for current manga
 
     def loadChapterFiles(self):
         """
@@ -331,28 +303,12 @@ class MainWindow(QMainWindow):
             # -> clear image
             self.clearImage()
         else:
-            chap_path = self.manga_vols[selected]
+            chap_layer = self.manga_vols[selected]
+            log.info("Loading chapter data from %s" % chap_layer.path)
 
-            log.info("Loading chapter data from %s" % chap_path.path)
-
-            # load the chapters under chap_path with the Layer proxy
-            try:
-                chap_layer = chap_path.open()
-                if chap_layer.image is not None:
-                    # chap_path is an image! show it!
-                    self.loadImage(chap_layer.image)
-
-                elif chap_layer.names is not None:
-                    # got some chapters, save them in internal dict for future lookup
-                    self.manga_chaps = chap_layer.names # (name, path) dict!
-
-                    # add chapter names to dropdown, was already cleared before
-                    self.dropdown_chapter.addItems(sorted([key for key, value in self.manga_chaps.items()]))
-           
-                self.refreshGUI() # refresh the idx/count labels in front of the dropdowns
-            except BaseException as ex:
-                self.showToast("Failed loading %s" % chap_path.path)
+            self.load(chap_layer, self.manga_chaps, self.dropdown_chapter)
     
+
     def loadPageFiles(self):
         """
         Load the page names for the current selected chapter
@@ -364,30 +320,38 @@ class MainWindow(QMainWindow):
 
         selected = self.selectedChapter()
         if selected not in self.manga_chaps:
-            # current selected volume is not in internal dict buffer?
+            # current selected volume is not in internal dict buffer
             # -> clear image
             self.clearImage()
         else:
-            page_path = self.manga_chaps[selected]
+            page_layer = self.manga_chaps[selected]
+            log.info("Loading page data from %s" % page_layer.path)
 
-            log.info("Loading page data from %s" % page_path.path)
+            self.load(page_layer, self.manga_pages, self.dropdown_page)
 
-            try:
-                page_layer = page_path.open()
-                if page_layer.image is not None:
-                    # chap_path is an image! show it!
-                    self.loadImage(page_layer.image)
-                
-                elif page_layer.names is not None:
-                    # got some pages, save them in internal dict for future lookup
-                    self.manga_pages = page_layer.names # (name, path) dict!
+    def load(self, layer, store, dropdown):
+        """
+        if the content of layer are other files:
+            load the content into the store and dropdown box
+        if the content of layer is an image:
+            load the image and display it
+        """
+        names_or_image = dict()
+        try:
+            names_or_image = layer.open()
+        except Exception as ex:
+            self.showToast("Failed loading %s\nMsg: %s" % (layer.path, ex))
+        else:
+            if isinstance(names_or_image, QImage):
+                self.loadImage(names_or_image)
+            elif isinstance(names_or_image, dict):
+                store.clear()
+                store.update(names_or_image) # (name, path) dict!
 
-                    # add page names to dropdown, was already cleared before
-                    self.dropdown_page.addItems(sorted([key for key, value in self.manga_pages.items()]))
-
-                self.refreshGUI() # refresh the idx/count labels in front of the dropdowns
-            except BaseException as ex:
-                self.showToast("Failed loading %s" % page_path.path)
+                # add names to dropdown, was already cleared before
+                dropdown.addItems(sorted([key for key, value in store.items()]))
+           
+            self.refreshGUI() # refresh the idx/count labels in front of the dropdowns
 
     def loadPage(self, idx = None):
         """
@@ -401,9 +365,9 @@ class MainWindow(QMainWindow):
 
         # open selected page
         image_layer = self.manga_pages[self.selectedPage()]  
-
         try:
-            self.loadImage(image_layer.open().image)
+            image = image_layer.open()
+            self.loadImage(image)
         except BaseException as ex:
             self.showToast("Failed loading %s" % image_layer.path)
 

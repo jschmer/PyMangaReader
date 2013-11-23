@@ -1,21 +1,22 @@
 PyMangaReader
 =============
 
-Simple reader for mangas.  
-Reads images (manga pages) from directories, zips and rars (only if the UnRAR utility is provided).
+Simple reader for mangas/comics.  
+Reads images (manga/comic pages) from directories, zips and rars (only if the UnRAR utility is provided).
 Supported image formats are jpg, png and gif.
 
 ## Features
 - Configurable base directories to read mangas from
-- Adjustable settings path for storing manga specific settings for easy synchronisation
 - Remembers last opened manga/volume/chapter/page between application launches to continue reading where you left off
+- Adjustable settings path for storing manga specific settings (last viewed image) for easy synchronisation
 - Fullscreen mode
 - Rotate image by 90° in either direction
-- Seamlessly navigate through the pages, you'll get notified if a new chapter or volume begins
+- Seamless navigation through the pages, you'll get notified if a new chapter or volume begins
+- Nested archives possible (e.g. zips in zip or zips in rar, rar in other archive isn't supported!)
 
 Works best with following directory/archive hierarchy:
 ```
-MangaName (directory)
+MangaName (directory or archive)
 |- Volume 1 (dir or archive)
 |  |- chapter 1 (dir or archive)
 |  |  |- Page 1 (image)

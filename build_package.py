@@ -7,7 +7,6 @@ from shutil import move
 from os import remove, close
 import zipfile
 
-
 # zipping an entire directory
 def zipdir(path, zip):
     for root, dirs, files in os.walk(path):
@@ -144,6 +143,7 @@ def buildPackage():
 if __name__ == '__main__':
   print("Building package...")
   # strip out log parameter in debug version of VS (so i don't have to remove it everytime i want to build a package)
+  # this would otherwise break the build() step
   sys.argv = [x for x in sys.argv if "log" not in x]
   buildPackage()
   print("Done.")

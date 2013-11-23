@@ -8,7 +8,8 @@ If you want to read rar archives you also need the [UnRAR] utility
 ### Building
 Checkout the repository, launch compile_ui.py to compile Qt designer and resource files to python and run `python PyMangaReader.pyw`.
 
-To generate a native package with all dependencies, install [cx_Freeze] and run `python setup.py build`  
+To generate a native package with all dependencies, install [cx_Freeze] and run `python build_package.py`   
+You'll get a zip archive with reasonable name taken from the last git tag and the architecture you are on. Example: `PyMangaReader.win-x64.v0.3-preview13.zip`
 
 [Python3]: http://www.python.org/
 [PyQt5]: http://www.riverbankcomputing.co.uk/software/pyqt/download5

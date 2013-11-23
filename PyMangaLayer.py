@@ -6,8 +6,11 @@ import rarfile
 from PyQt5.QtGui import QImage
 from PyMangaLogger import log
 
-supported_archives = ["", ".zip", ".cbz"]
+supported_archives = [".zip", ".cbz"]
 def isSupportedArchive(file):
+    if os.path.isdir(file):
+        return True
+
     global supported_archives
     fileName, fileExtension = os.path.splitext(file)
     return fileExtension.lower() in supported_archives
@@ -57,6 +60,8 @@ def which(program):
     '''
     Check if a program is in PATH
     Taken from http://stackoverflow.com/a/377028
+    return the path to the program
+    or None if it couldn't be found
     '''
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
@@ -75,44 +80,48 @@ def which(program):
     return None
 
 class Zip(object):
-    zipfile = None
-    file = None
+    """ zipfile wrapper with a totally simple API """
+    zipfile = None  # zipfile instance
+    file    = None
+    names   = None  # archive content of zipfile/file
 
     def __init__(self, file):
-        """ open zip archive pointed to by file """
         self.file = file
         self.load(file)
 
     def load(self, file):
-        """ open zip archive pointed to by file """
+        """ load filenames in the archive pointed to by file """
         self.zipfile = zipfile.ZipFile(file, "r")
         self.names = self.zipfile.namelist()
 
     def open(self, name):
+        """ open the file with name in this archive as bytestream """
         return io.BytesIO(self.zipfile.read(name))
 
 class Rar(object):
+    """ rarfile wrapper with a totally simple API """
     rarfile = None
-    file = None
+    file    = None
+    names   = None  # archive content of rarfile/file
 
     def __init__(self, file):
-        """ open zip archive pointed to by file """
         self.file = file
         self.load(file)
 
     def load(self, file):
-        """ open zip archive pointed to by file """
+        """ load files in the archive pointed to by file """
         self.rarfile = rarfile.RarFile(file, "r")
         self.names = self.rarfile.namelist()
 
     def open(self, name):
+        """ open the file with name in this archive as bytestream """
         return io.BytesIO(self.rarfile.read(name))
 
 class Layer():
     """
-    Generic Layer that provides a consistent view for archives, directories, files
+    Generic Layer that provides a consistent view for archives, directories, images
     """
-    path    = None # path to the archive
+    path    = None # path to the archive/dir/image
     archive = None # cache for an opened archive
 
     def __init__(self, _path, _archive = None):
@@ -121,15 +130,17 @@ class Layer():
         
     def open(self):
         """
-        Opens the path the layer was constructed with
+        Opens the path the layer was constructed with.
         Handles the type of the path appropriately
-        and return a list of pairs with (direntry, Layer)
+            and returns a list of pairs with (path, Layer) entries
+            or a QImage if self.path is an image
+            or None if it failed to load anything
         """
         entries = None
         if isImage(self.path):
             # got an image, load it!
             if self.archive:
-                # load the image from the archives!
+                # load the image from the archive!
                 log.info("Open image '%s' in archive '%s'" % (self.path, self.archive.file))
                 file = self.archive.open(self.path)
                 image = QImage()
@@ -151,12 +162,7 @@ class Layer():
                 log.info("Open zip '%s' from filesystem" % self.path)
                 archive = Zip(self.path)
 
-            names = archive.names
-
-            name_pairs = []
-            for name in names:
-                if isRar(name) or isZip(name) or isImage(name):
-                    name_pairs.append( (name, Layer(name, archive)) )
+            name_pairs = [(name, Layer(name, archive)) for name in archive.names if isRar(name) or isZip(name) or isImage(name)]
             entries = dict(name_pairs)
 
         elif isRar(self.path) and isRARactive():
@@ -171,12 +177,7 @@ class Layer():
                 log.info("Open rar '%s' from filesystem" % self.path)
                 archive = Rar(self.path)
 
-            names = archive.names
-
-            name_pairs = []
-            for name in names:
-                if isRar(name) or isZip(name) or isImage(name):
-                    name_pairs.append( (name, Layer(name, archive)) )
+            name_pairs = [(name, Layer(name, archive)) for name in archive.names if isRar(name) or isZip(name) or isImage(name)]
             entries = dict(name_pairs)
 
         elif os.path.isdir(self.path):
@@ -185,9 +186,7 @@ class Layer():
             dir = os.listdir(self.path)
 
             # save all names in directory
-            name_pairs = []
-            for d in dir:
-                name_pairs.append((d, Layer(os.path.join(self.path, d))))
+            name_pairs = [(d, Layer(os.path.join(self.path, d))) for d in dir if isSupportedArchive(os.path.join(self.path, d)) or isImage(d)]
             entries = dict(name_pairs)
 
         else:

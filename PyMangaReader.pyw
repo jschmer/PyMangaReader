@@ -308,7 +308,6 @@ class MainWindow(QMainWindow):
 
             self.load(chap_layer, self.manga_chaps, self.dropdown_chapter)
     
-
     def loadPageFiles(self):
         """
         Load the page names for the current selected chapter

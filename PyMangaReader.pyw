@@ -1,6 +1,6 @@
 import sys, os, threading, time
 
-from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream, QEvent)
+from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream, QEvent, pyqtSignal)
 from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform, QKeyEvent, QCursor)
 from PyQt5.QtWidgets import (QToolTip, QDialog, QComboBox, QLabel, QScrollArea, QAction, QApplication, QFileDialog, QMainWindow, QMessageBox, QTextEdit, QSizePolicy)
 
@@ -17,6 +17,15 @@ def rotate(image, deg):
         raise BaseException
     rot = QTransform().rotate(deg)
     return image.transformed(rot)
+
+class DoubleClickLabel(QLabel):
+    onDoubleClick = pyqtSignal()
+
+    def __init__(self):
+        super(DoubleClickLabel, self).__init__()
+
+    def mouseDoubleClickEvent(self, event):
+        self.onDoubleClick.emit()
 
 class MainWindow(QMainWindow):
     manga_image = None  # holds the real image for display
@@ -70,6 +79,14 @@ class MainWindow(QMainWindow):
         self.toast_label.setAlignment(Qt.AlignCenter)
         self.toast_label.setMargin(5)
         self.toast_label.hide()
+
+        self.ui.manga_image_label = DoubleClickLabel()
+        self.ui.manga_image_label.onDoubleClick.connect(self.toggleFullscreen)
+        self.ui.manga_image_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self.ui.manga_image_label.setStyleSheet("background-color: rgb(0, 0, 0);\ncolor: rgb(255, 255, 255);")
+        self.ui.manga_image_label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+
+        self.ui.scrollArea.setWidget(self.ui.manga_image_label)
 
         # load previous window geometry
         geom = self.settings.load("geometry")
@@ -609,9 +626,6 @@ class MainWindow(QMainWindow):
                 self.close()
             else:
                 self.toggleFullscreen()
-
-    def mouseDoubleClickEvent(self, event):
-        self.toggleFullscreen()
 
     def wheelEvent(self, event):
         """ Trigger left or right arrow key based on wheel direction """

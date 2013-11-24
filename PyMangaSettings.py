@@ -1,7 +1,7 @@
 import sys
 import os
 
-from shutil import move
+from shutil import move, copy
 
 from PyQt5.QtCore import (QSettings)
 from PyQt5.QtGui import (QGuiApplication)
@@ -54,10 +54,9 @@ class Settings():
             oldpath = self.settings[MANGA_SETTINGS_PATH]
             newpath = dialog.settings[MANGA_SETTINGS_PATH]
 
-            # check if we have a new path
-            if oldpath != newpath:
-                # move old file to new location
-                move(oldpath, newpath)
+            # copy old file to new location if newpath doesn't exist
+            if oldpath != newpath and not os.path.exists(newpath):
+                copy(oldpath, newpath)
 
             self.settings = dialog.settings
             self.refreshMangaSettings()

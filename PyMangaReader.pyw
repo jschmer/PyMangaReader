@@ -578,9 +578,9 @@ class MainWindow(QMainWindow):
         """ Trigger left or right arrow key based on wheel direction """
         delta = event.angleDelta().y()
         if delta > 0:
-            self.keyReleaseEvent(QKeyEvent(QEvent.KeyRelease, Qt.Key_Left, Qt.NoModifier))
+            self.pageflipPrev()
         elif delta < 0:
-            self.keyReleaseEvent(QKeyEvent(QEvent.KeyRelease, Qt.Key_Right, Qt.NoModifier))
+            self.pageflipNext()
         pass
 
     def checkForEmptyMangas(self):

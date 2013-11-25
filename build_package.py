@@ -30,27 +30,22 @@ platform = {
 }
 
 def generateVersionForGUI(version_string):
-  # version file
-  file_path = "version.py"
+  # version template file
+  version_template = "version.template"
   
-  # Create temp file
-  fh, abs_path = mkstemp()
-  
-  # open files
-  new_file = open(abs_path,'w')
-  old_file = open(file_path)
+  # output version python file
+  version_py = "version.py"
+
+  new_file = open(version_py, 'w')
+  old_file = open(version_template)
   
   for line in old_file:
     new_file.write(re.sub(r"^FULL_VERSION=.*", 'FULL_VERSION="%s"' % version_string , line))
   
   # close files
   new_file.close()
-  close(fh)
   old_file.close()
-  
-  # Remove original file and move new file
-  remove(file_path)
-  move(abs_path, file_path)
+ 
 
 def buildPackage():
   version = generateVersionForCurrentCommit()

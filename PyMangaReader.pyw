@@ -1,7 +1,10 @@
 import sys, os, threading, time
 
+from ImageQt import ImageQt
+from PIL import Image
+
 from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream, QEvent, pyqtSignal)
-from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform, QKeyEvent, QCursor)
+from PyQt5.QtGui import (QIcon, QKeySequence, QPainter, QPalette, QPixmap, QTransform, QKeyEvent, QCursor) # QImage
 from PyQt5.QtWidgets import (QShortcut, QToolTip, QDialog, QComboBox, QLabel, QScrollArea, QAction, QApplication, QFileDialog, QMainWindow, QMessageBox, QTextEdit, QSizePolicy)
 
 from ui_mainwindow import Ui_MainWindow
@@ -13,10 +16,10 @@ from version import FULL_VERSION
 class NoElementsError(BaseException): pass
 
 def rotate(image, deg):
-    if not isinstance(image, QPixmap):
+    if not isinstance(image, Image.Image):
         raise BaseException
-    rot = QTransform().rotate(deg)
-    return image.transformed(rot)
+    return image.rotate(deg)
+
 
 class DoubleClickLabel(QLabel):
     onDoubleClick = pyqtSignal()
@@ -63,7 +66,7 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__()
 
         self.settings = Settings()   # initialize and load settings from system
-        self.manga_image = QPixmap() 
+        #self.manga_image = QPixmap() 
 
         # adjust tooltip font
         font = QGuiApplication.font()
@@ -133,7 +136,7 @@ class MainWindow(QMainWindow):
 
         # load previous image absolute rotation
         rot = self.settings.load("absolute_rotation")
-        if rot != None:
+        if rot is not None and self.manga_image is not None:
             self.rotate(int(rot))
 
         # refresh GUI
@@ -289,7 +292,7 @@ class MainWindow(QMainWindow):
             manga_names = os.listdir(os.path.abspath(path))
 
             # save as (name, path) pairs
-            list = [(x, os.path.join(path, x)) for x in manga_names]
+            list = [(x, os.path.join(path, x)) for x in manga_names if isSupportedArchive(os.path.join(path, x))]
             manga_list += list
 
         # convert to dicts for easy lookup
@@ -389,7 +392,7 @@ class MainWindow(QMainWindow):
         except Exception as ex:
             self.showToast("Failed loading %s\nMsg: %s" % (layer.path, ex))
         else:
-            if isinstance(names_or_image, QImage):
+            if isinstance(names_or_image, Image.Image):
                 self.loadImage(names_or_image)
             elif isinstance(names_or_image, dict):
                 store.clear()
@@ -421,14 +424,14 @@ class MainWindow(QMainWindow):
         self.refreshGUI()
 
     def loadImage(self, image):
-        """ Load an image of type QImage """
-        if not isinstance(image, QImage):
+        """ Load an image of type Image """
+        if not isinstance(image, Image.Image):
             return
 
         # if the image is not empty
-        if not image.isNull():
+        if not image is None:
             # convert to qpixmap and save in internal buffer
-            self.manga_image = rotate(QPixmap.fromImage(image), self.absolute_rotation)
+            self.manga_image = rotate(image, self.absolute_rotation)
 
             # trigger resizing (includes setting/showing the image)
             self.refreshMangaImage()
@@ -436,7 +439,7 @@ class MainWindow(QMainWindow):
     # CLEARER
     def clearImage(self):
         """ Clear the current image """
-        self.manga_image = QPixmap()
+        self.manga_image = None
         self.refreshMangaImage()
 
     def clearMangaData(self):
@@ -453,8 +456,7 @@ class MainWindow(QMainWindow):
     def rotate(self, deg):
         """ Rotate image by deg, always relative to the rotation before """
         self.absolute_rotation = (self.absolute_rotation + deg) % 360
-        rot = QTransform().rotate(deg)
-        self.manga_image = self.manga_image.transformed(rot);
+        self.manga_image = rotate(self.manga_image, deg);
         self.refreshMangaImage()
 
     def refreshMangaImage(self):
@@ -550,11 +552,27 @@ class MainWindow(QMainWindow):
         # force an geometry update for all widgets
         self.geometryUpdateHack()
         
-        # resize manga image (pixmap) only if it is not empty
+        # resize manga image only if it is not empty
         pic = self.manga_image
-        if not pic.isNull():
-            pic = self.manga_image.scaled(self.ui.manga_image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        
+        if pic is None:
+            pic = QPixmap()
+        else:
+            maxwidth = self.ui.manga_image_label.size().width()
+            maxheight = self.ui.manga_image_label.size().height()
+
+            width = pic.size[0]
+            height = pic.size[1]
+            ratio = min(maxwidth/width, maxheight/height)
+
+            pic = self.manga_image.resize((int(width*ratio), int(height*ratio)), Image.BILINEAR)
+            # or PIL.Image.NEAREST
+            # or PIL.Image.BICUBIC
+            # or PIL.Image.ANTIALIAS (for downsampling?)
+
+            # convert PIL.Image to QPixmap
+            self.___cached_data = ImageQt(pic) # to prevent python to clean the data up that qpixmap references :I
+            pic = QPixmap.fromImage(self.___cached_data)
+
         # update label with scaled pixmap (or empty pixmap)
         self.ui.manga_image_label.setPixmap(pic)
 

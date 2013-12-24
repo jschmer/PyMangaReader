@@ -33,6 +33,7 @@ class DoubleClickLabel(QLabel):
 class MainWindow(QMainWindow):
     manga_image = None  # holds the real image for display
     absolute_rotation = 0
+    resize_mode = None
 
     manga_before = None # cache for last selected manga
     settings = None
@@ -66,7 +67,7 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__()
 
         self.settings = Settings()   # initialize and load settings from system
-        #self.manga_image = QPixmap() 
+        self.resize_mode = Image.BICUBIC
 
         # adjust tooltip font
         font = QGuiApplication.font()
@@ -172,6 +173,42 @@ class MainWindow(QMainWindow):
         toggle_menu = QShortcut(QKeySequence(Qt.Key_H), self)
         toggle_menu.activated.connect(self.showMenu)
         self.shortcuts["toggle_menu"] = toggle_menu
+
+        resize_mode_nearest = QShortcut(QKeySequence(Qt.Key_1), self)
+        resize_mode_nearest.activated.connect(self.setResizeModeNearest)
+        self.shortcuts["resize_mode_nearest"] = resize_mode_nearest
+
+        resize_mode_bilinear = QShortcut(QKeySequence(Qt.Key_2), self)
+        resize_mode_bilinear.activated.connect(self.setResizeModeBilinear)
+        self.shortcuts["resize_mode_bilinear"] = resize_mode_bilinear
+
+        resize_mode_bicubic = QShortcut(QKeySequence(Qt.Key_3), self)
+        resize_mode_bicubic.activated.connect(self.setResizeModeBicubic)
+        self.shortcuts["resize_mode_bicubic"] = resize_mode_bicubic
+
+        resize_mode_antialias = QShortcut(QKeySequence(Qt.Key_4), self)
+        resize_mode_antialias.activated.connect(self.setResizeModeAntiAlias)
+        self.shortcuts["resize_mode_antialias"] = resize_mode_antialias
+
+    def setResizeModeNearest(self):
+        self.resize_mode = Image.NEAREST
+        self.showToast("Using resize mode 'NEAREST'")
+        self.refreshMangaImage()
+
+    def setResizeModeBilinear(self):
+        self.resize_mode = Image.BILINEAR
+        self.showToast("Using resize mode 'BILINEAR'")
+        self.refreshMangaImage()
+
+    def setResizeModeBicubic(self):
+        self.resize_mode = Image.BICUBIC
+        self.showToast("Using resize mode 'BICUBIC'")
+        self.refreshMangaImage()
+
+    def setResizeModeAntiAlias(self):
+        self.resize_mode = Image.ANTIALIAS
+        self.showToast("Using resize mode 'ANTIALIAS'")
+        self.refreshMangaImage()
 
     # GETTER
     def selectedMangaIdx(self):
@@ -564,8 +601,9 @@ class MainWindow(QMainWindow):
             height = pic.size[1]
             ratio = min(maxwidth/width, maxheight/height)
 
-            pic = self.manga_image.resize((int(width*ratio), int(height*ratio)), Image.BILINEAR)
+            pic = self.manga_image.resize((int(width*ratio), int(height*ratio)), self.resize_mode)
             # or PIL.Image.NEAREST
+            # or PIL.Image.BILINEAR
             # or PIL.Image.BICUBIC
             # or PIL.Image.ANTIALIAS (for downsampling?)
 

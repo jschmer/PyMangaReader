@@ -643,11 +643,14 @@ class MainWindow(QMainWindow):
                         break
                     else:
                         self.showToast("Prev: %s" % cur_box.currentText())
+                else:
+                    cur_box = box
 
-                    # also select last entry in each child boxes (as we are coming from above)
+                # also select last entry in each child boxes
+                # cur_box is the dropdown box that was sucessfully decremented without going over bounds
+                cur_box = cur_box.child
+                while cur_box and self.selectEntry(cur_box, cur_box.count() - 1) == True:
                     cur_box = cur_box.child
-                    while cur_box and self.selectEntry(cur_box, cur_box.count() - 1) == True:
-                        cur_box = cur_box.child
 
                 break
             except NoElementsError:

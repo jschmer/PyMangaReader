@@ -220,18 +220,27 @@ class MainWindow(QMainWindow):
     def saveMangaSettings(self, manga):
         """ save current selected volume/chapter/page for given manga """
         log.info("Saving manga page settings for %s" % manga)
-        self.settings.storeMangaSetting(manga, [self.selectedVolumeIdx(), self.selectedChapterIndex(), self.selectedPageIndex()])
+        self.settings.storeMangaSetting(manga, [self.selectedVolume(), self.selectedChapter(), self.selectedPage()])
 
     def loadMangaSettings(self):
         """ select last viewed volume/chapter/manga for current manga """
         log.info("Loading manga page settings for %s" % self.selectedManga())
         manga_settings = self.settings.loadMangaSettings(self.selectedManga())
         if manga_settings:
-            volidx, chapteridx, pageidx = manga_settings
+            vol, chapter, page = manga_settings
             try:
-                self.selectEntry(self.dropdown_volume, int(volidx))
-                self.selectEntry(self.dropdown_chapter, int(chapteridx))
-                self.selectEntry(self.dropdown_page, int(pageidx))
+                idx = self.dropdown_volume.findText(vol)
+                if idx == -1: idx = 0
+                self.selectEntry(self.dropdown_volume, idx)
+
+                idx = self.dropdown_chapter.findText(chapter)
+                if idx == -1: idx = 0
+                self.selectEntry(self.dropdown_chapter, idx)
+
+                idx = self.dropdown_page.findText(page)
+                if idx == -1: idx = 0
+                self.selectEntry(self.dropdown_page, idx)
+
             except NoElementsError:
                 pass
 

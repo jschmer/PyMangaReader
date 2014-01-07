@@ -242,6 +242,7 @@ class MainWindow(QMainWindow):
             # select it!
             idx = self.dropdown_manga.findText(last_manga)
             currentIdx = self.selectedMangaIdx()
+            if idx == -1: idx = 0
             if idx != currentIdx:
                 self.dropdown_manga.setCurrentIndex(idx)
             else:

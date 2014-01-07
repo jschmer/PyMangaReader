@@ -3,7 +3,8 @@ import zipfile
 import re, io
 import rarfile
 
-from PyQt5.QtGui import QImage
+#from PyQt5.QtGui import QImage
+from PIL import Image
 from PyMangaLogger import log
 
 supported_archives = [".zip", ".cbz"]
@@ -133,7 +134,7 @@ class Layer():
         Opens the path the layer was constructed with.
         Handles the type of the path appropriately
             and returns a list of pairs with (path, Layer) entries
-            or a QImage if self.path is an image
+            or a PIL.Image if self.path is an image
             or None if it failed to load anything
         """
         entries = None
@@ -143,14 +144,16 @@ class Layer():
                 # load the image from the archive!
                 log.info("Open image '%s' in archive '%s'" % (self.path, self.archive.file))
                 file = self.archive.open(self.path)
-                image = QImage()
-                if not image.loadFromData(file.read()):
+                try:
+                    image = Image.open(file).convert("RGB")
+                    return image
+                except IOError as ex:
                     log.error("Failed loading image '%s' in archive '%s'" % (self.path, self.archive.file))
                     return None
                 return image
             else:
                 log.info("Open image '%s' from filesystem" % self.path)
-                return QImage(self.path)
+                return Image.open(self.path).convert("RGB")
 
         elif isZip(self.path):
             # got a zipfile, open it!

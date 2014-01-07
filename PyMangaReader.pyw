@@ -27,9 +27,14 @@ class DoubleClickLabel(QLabel):
     def mouseDoubleClickEvent(self, event):
         self.onDoubleClick.emit()
 
+
+WindowActive = QEvent.WindowActivate
+WindowPassive = QEvent.WindowDeactivate
+
 class MainWindow(QMainWindow):
     manga_image = None  # holds the real image for display
     absolute_rotation = 0
+    windowStatus = WindowPassive
 
     manga_before = None # cache for last selected manga
     settings = None
@@ -468,6 +473,9 @@ class MainWindow(QMainWindow):
         self.ui.centralwidget.hide()
         self.ui.centralwidget.show()
 
+    def isMenuVisible(self):
+        return self.ui.groupBox.isVisible()
+
     def showMenu(self, activate = None):
         """
         Show the menu, if activate is not given, it is toggled
@@ -480,7 +488,14 @@ class MainWindow(QMainWindow):
         else:
             self.ui.groupBox.hide()
 
+        self.updateMouseCursor()
         self.refreshMangaImage()
+
+    def updateMouseCursor(self):
+        if not self.isMenuVisible() and self.isFullScreen() and self.windowStatus == WindowActive:
+            self.hideMouseCursor()
+        else:
+            self.showMouseCursor()
 
     def showMouseCursor(self):
         QApplication.restoreOverrideCursor();
@@ -496,14 +511,13 @@ class MainWindow(QMainWindow):
         if the image would only go fullscreen this wouldn't be possible (as far as i know?)
         """
         if not self.isFullScreen():
-            self.hideMouseCursor()
             self.showMenu(False)
             self.showFullScreen()
         else:
-            self.showMouseCursor()
             self.showMenu(True)
             self.showNormal()
 
+        self.updateMouseCursor()
     def selectEntry(self, combobox, delta):
         """
         Select the entry delta indexes away in the given combobox
@@ -687,13 +701,9 @@ class MainWindow(QMainWindow):
                 continue
 
     def event(self, event):
-        if event.type() == QEvent.WindowActivate:
-            if self.isFullScreen():
-                self.hideMouseCursor()
-            else:
-                self.showMouseCursor()
-        elif event.type() == QEvent.WindowDeactivate:
-            self.showMouseCursor()
+        if event.type() in (QEvent.WindowActivate, QEvent.WindowDeactivate):
+            self.windowStatus = event.type()
+            self.updateMouseCursor()
 
         return super().event(event)
 

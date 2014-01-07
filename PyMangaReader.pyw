@@ -482,6 +482,12 @@ class MainWindow(QMainWindow):
 
         self.refreshMangaImage()
 
+    def showMouseCursor(self):
+        QApplication.restoreOverrideCursor();
+
+    def hideMouseCursor(self):
+        QApplication.setOverrideCursor(QCursor(Qt.BlankCursor))
+
     def toggleFullscreen(self):
         """
         Toggle fullscreen mode,
@@ -490,11 +496,11 @@ class MainWindow(QMainWindow):
         if the image would only go fullscreen this wouldn't be possible (as far as i know?)
         """
         if not self.isFullScreen():
-            QApplication.setOverrideCursor(QCursor(Qt.BlankCursor))
+            self.hideMouseCursor()
             self.showMenu(False)
             self.showFullScreen()
         else:
-            QApplication.restoreOverrideCursor();
+            self.showMouseCursor()
             self.showMenu(True)
             self.showNormal()
 
@@ -679,6 +685,17 @@ class MainWindow(QMainWindow):
                 break
             except NoElementsError:
                 continue
+
+    def event(self, event):
+        if event.type() == QEvent.WindowActivate:
+            if self.isFullScreen():
+                self.hideMouseCursor()
+            else:
+                self.showMouseCursor()
+        elif event.type() == QEvent.WindowDeactivate:
+            self.showMouseCursor()
+
+        return super().event(event)
 
 if __name__ == '__main__':
     setupLoggerFromCmdArgs(sys.argv)

@@ -1,7 +1,7 @@
 import sys, os, threading, time
 
-from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream, QEvent, pyqtSignal)
-from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform, QKeyEvent, QCursor)
+from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QSettings, QSize, Qt, QTextStream, QEvent, pyqtSignal, QRect)
+from PyQt5.QtGui import (QIcon, QKeySequence, QImage, QPainter, QPalette, QPixmap, QTransform, QKeyEvent, QCursor, QFontMetrics, QFont, QColor)
 from PyQt5.QtWidgets import (QShortcut, QToolTip, QDialog, QComboBox, QLabel, QScrollArea, QAction, QApplication, QFileDialog, QMainWindow, QMessageBox, QTextEdit, QSizePolicy)
 
 from ui_mainwindow import Ui_MainWindow
@@ -17,6 +17,68 @@ def rotate(image, deg):
         raise BaseException
     rot = QTransform().rotate(deg)
     return image.transformed(rot)
+
+class OrientationLabel(QLabel):
+    rotation = 0
+
+    def paintEvent(self, paintEvent):
+        painter = QPainter(self)
+ 
+        # Set default font
+        painter.setFont(QFont())
+        # Set font color
+        painter.setPen(Qt.black)
+        # Get QFontMetrics reference
+        fm = painter.fontMetrics()
+ 
+        text = self.text()
+        width = self.size().width()
+        height = self.size().height()
+
+        dim = lambda: QRect(-5, 5, fm.width(text) + 9, -(fm.height()+5))
+
+        # top
+        if self.rotation == 0:
+            painter.resetTransform()
+            center = QPoint( ( width - fm.width(text))/2, fm.height() )
+            rectdimension = dim()
+            painter.translate(center)
+            painter.fillRect(rectdimension, Qt.white)
+            painter.drawRect(rectdimension)
+            painter.drawText(QPoint(0, 0), text)
+
+        # right 
+        if self.rotation == 90:
+            painter.resetTransform()
+            center = QPoint( (height - fm.width(text))/2, - width + fm.height())
+            rectdimension = dim()
+            painter.rotate(90)
+            painter.translate(center)
+            painter.fillRect(rectdimension, Qt.white)
+            painter.drawRect(rectdimension)
+            painter.drawText(QPoint(0, 0), text)
+
+        # left
+        if self.rotation == 270:
+            painter.resetTransform()
+            center = QPoint(-height + (height - fm.width(text))/2, fm.height() )
+            rectdimension = dim()
+            painter.rotate(-90)
+            painter.translate(center)
+            painter.fillRect(rectdimension, Qt.white)
+            painter.drawRect(rectdimension)
+            painter.drawText(QPoint(0, 0), text)
+
+        # bottom
+        if self.rotation == 180:
+            painter.resetTransform()
+            center = QPoint( -( width + fm.width(text))/2, -( height - fm.height()) )
+            rectdimension = dim()
+            painter.rotate(180)
+            painter.translate(center)
+            painter.fillRect(rectdimension, Qt.white)
+            painter.drawRect(rectdimension)
+            painter.drawText(QPoint(0, 0), text)
 
 class DoubleClickLabel(QLabel):
     onDoubleClick = pyqtSignal()
@@ -81,10 +143,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(APPLICATION)
         self.resize(800, 600) # arbitrary default size
 
-        self.toast_label = QLabel("TOAST MESSAGE", self.ui.scrollArea)
-        self.toast_label.setStyleSheet("background-color: rgb(255, 255, 255);\nborder: 1px solid rgb(0, 0, 0);\ncolor: rgb(0, 0, 0);")
-        self.toast_label.setAlignment(Qt.AlignCenter)
-        self.toast_label.setMargin(5)
+        self.toast_label = OrientationLabel("TOAST MESSAGE", self.ui.scrollArea)
         self.toast_label.hide()
 
         self.ui.manga_image_label = DoubleClickLabel()
@@ -468,6 +527,7 @@ class MainWindow(QMainWindow):
     def rotate(self, deg):
         """ Rotate image by deg, always relative to the rotation before """
         self.absolute_rotation = (self.absolute_rotation + deg) % 360
+        self.toast_label.rotation = self.absolute_rotation # update toast label rotation
         rot = QTransform().rotate(deg)
         self.manga_image = self.manga_image.transformed(rot);
         self.refreshMangaImage()
@@ -580,6 +640,9 @@ class MainWindow(QMainWindow):
         # force an geometry update for all widgets
         self.geometryUpdateHack()
         
+        # resize toast label
+        self.toast_label.resize(self.ui.manga_image_label.size())
+
         # resize manga image (pixmap) only if it is not empty
         pic = self.manga_image
         if not pic.isNull():

@@ -132,7 +132,7 @@ class MainWindow(QMainWindow):
         """
         super(MainWindow, self).__init__()
 
-        self.settings = Settings()   # initialize and load settings from system
+        self.settings = Settings(self)   # initialize and load settings from system
         self.resize_mode = Image.BICUBIC
 
         # adjust tooltip font
@@ -206,36 +206,17 @@ class MainWindow(QMainWindow):
         # refresh GUI
         self.refreshGUI()
         self.checkForEmptyMangas()
-        self.setupShortcuts()
+        self.connectShortcuts()
 
-    def setupShortcuts(self):
-        rotate_right = QShortcut(QKeySequence("R"), self)
-        rotate_right.activated.connect(self.rotate_right)
-        self.shortcuts["rotate_right"] = rotate_right
-
-        rotate_left = QShortcut(QKeySequence("E"), self)
-        rotate_left.activated.connect(self.rotate_left)
-        self.shortcuts["rotate_left"] = rotate_left
-
-        pageflip_prev = QShortcut(QKeySequence(Qt.Key_Left), self)
-        pageflip_prev.activated.connect(self.pageflipPrev)
-        self.shortcuts["pageflip_prev"] = pageflip_prev
-
-        pageflip_next = QShortcut(QKeySequence(Qt.Key_Right), self)
-        pageflip_next.activated.connect(self.pageflipNext)
-        self.shortcuts["pageflip_next"] = pageflip_next
-
-        close = QShortcut(QKeySequence(Qt.Key_Escape), self)
-        close.activated.connect(self.tryClose)
-        self.shortcuts["close"] = close
-
-        toggle_fullscreen = QShortcut(QKeySequence(Qt.Key_F), self)
-        toggle_fullscreen.activated.connect(self.toggleFullscreen)
-        self.shortcuts["toggle_fullscreen"] = toggle_fullscreen
-
-        toggle_menu = QShortcut(QKeySequence(Qt.Key_H), self)
-        toggle_menu.activated.connect(self.showMenu)
-        self.shortcuts["toggle_menu"] = toggle_menu
+    def connectShortcuts(self):
+        """ Precondition: Shortcuts need to be already defined!! """
+        self.settings.shortcuts["Rotate CW"].activated.connect(self.rotate_right)
+        self.settings.shortcuts["Rotate CCW"].activated.connect(self.rotate_left)
+        self.settings.shortcuts["Next Page"].activated.connect(self.pageflipNext)
+        self.settings.shortcuts["Previous Page"].activated.connect(self.pageflipPrev)
+        self.settings.shortcuts["Quit"].activated.connect(self.tryClose)
+        self.settings.shortcuts["Toggle Fullscreen"].activated.connect(self.toggleFullscreen)
+        self.settings.shortcuts["Show/Hide Menu"].activated.connect(self.showMenu)
 
         resize_mode_nearest = QShortcut(QKeySequence(Qt.Key_1), self)
         resize_mode_nearest.activated.connect(self.setResizeModeNearest)

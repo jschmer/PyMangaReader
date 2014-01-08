@@ -13,6 +13,7 @@ Supported image formats are jpg, png and gif.
 - Rotate image by 90° in either direction
 - Seamless navigation through the pages, you'll get notified if a new chapter or volume begins
 - Nested archives possible (e.g. zips in zip or zips in rar, rar in other archive isn't supported!)
+- Freely configurable Keyboard Shortcuts
 
 Works best with following directory/archive hierarchy:
 ```
@@ -27,6 +28,8 @@ MangaName (directory or archive)
 but can also handle shallower hierarchies.
 
 ## Hotkeys
+Keyboard Hotkeys are freely assignable through the settings dialog, defaults are:
+
 Key | Action
 ----|------
 Left  | Flip to previous page
@@ -41,6 +44,8 @@ Mouse | Action
 ------|------
 Doubleclick  | Toggle Fullscreen
 Wheel        | Flip to next/previous page
+
+Mouse Shortcuts aren't freely assignable yet.
 
 ## Packages
 Precompiled packages for Windows and Linux are available [here][Releases].  

@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (QDialog, QFileDialog)
 
 from PyMangaLayer import *
 from ui_settings import Ui_SettingsDialog
-
+from PyMangaHotkeySettings import HotkeyDialog
 
 # setting tags
 MANGA_DIRS = "mangadirs"
@@ -17,13 +17,14 @@ class SettingsDialog(QDialog):
 
     settings = None
 
-    def __init__(self, settings):
+    def __init__(self, settings, shortcuts):
         super(SettingsDialog, self).__init__()
 
         if not settings:
             raise "No Settings? Damn You!"
 
         self.settings = settings
+        self.shortcuts = shortcuts
 
         # Set up the user interface from Designer.
         self.ui = Ui_SettingsDialog()
@@ -39,6 +40,7 @@ class SettingsDialog(QDialog):
         self.ui.pushRemoveMangaDir.clicked.connect(self.removeMangaDir)
         self.ui.pushSelectMangaSettingsDir.clicked.connect(self.selectMangaSettingsPath)
         self.ui.pushSelectUnrarExecutable.clicked.connect(self.selectUnrarPath)
+        self.ui.button_hotkey.clicked.connect(self.execHotkey)
 
     def addMangaDir(self):
         dir = QFileDialog.getExistingDirectory(self, "Select Directory")
@@ -77,3 +79,7 @@ class SettingsDialog(QDialog):
 
         self.ui.labelMangaSettings.setText(self.settings[MANGA_SETTINGS_PATH])
         self.ui.labelUnrarExe.setText(self.settings[UNRAR_EXE])
+
+    def execHotkey(self):
+        dialog = HotkeyDialog(self.shortcuts)
+        dialog.exec_()

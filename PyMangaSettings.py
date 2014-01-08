@@ -4,7 +4,8 @@ import os
 from shutil import move, copy
 
 from PyQt5.QtCore import (QSettings)
-from PyQt5.QtGui import (QGuiApplication)
+from PyQt5.QtGui import (QGuiApplication, QKeySequence)
+from PyQt5.QtWidgets import (QShortcut)
 
 from PyMangaSettingsDialog import *
 from PyMangaLogger import log
@@ -27,7 +28,14 @@ class Settings():
     appsettings = None
     mangasettings = None
 
-    def __init__(self):
+    # shortcuts/hotkeys
+    shortcuts = None
+
+    parent = None
+
+    def __init__(self, parent):
+        self.parent = parent
+
         # load application settings (fixed location)
         self.appsettings = QSettings(COMPANY, APPLICATION)
         config = self.appsettings.value("settings")
@@ -35,7 +43,29 @@ class Settings():
             # merge settings
             self.settings = dict(list(self.settings.items()) + list(config.items()))
 
+        self.setupDefaultShortcuts()
+        shortcuts = self.appsettings.value("shortcuts")
+        if shortcuts:
+            # unserialize keysequences and assign them to their corresponding shortcuts!
+            for key, value in shortcuts.items():
+                keysequence = QKeySequence.fromString(value, QKeySequence.NativeText)
+
+                # skip shortcuts that don't exist
+                if key not in self.shortcuts: continue
+
+                self.shortcuts[key].setKey(keysequence)
+
         self.refreshMangaSettings()
+
+    def setupDefaultShortcuts(self):
+        self.shortcuts = {}
+        self.shortcuts["Rotate CW"] = QShortcut(QKeySequence("R"), self.parent)
+        self.shortcuts["Rotate CCW"] = QShortcut(QKeySequence("E"), self.parent)
+        self.shortcuts["Next Page"] = QShortcut(QKeySequence(Qt.Key_Right), self.parent)
+        self.shortcuts["Previous Page"] = QShortcut(QKeySequence(Qt.Key_Left), self.parent)
+        self.shortcuts["Quit"] = QShortcut(QKeySequence(Qt.Key_Escape), self.parent)
+        self.shortcuts["Toggle Fullscreen"] = QShortcut(QKeySequence(Qt.Key_F), self.parent)
+        self.shortcuts["Show/Hide Menu"] = QShortcut(QKeySequence(Qt.Key_H), self.parent)
 
     def refreshMangaSettings(self):
         # load manga specific settings from MANGA_SETTINGS_PATH as ini file
@@ -46,9 +76,15 @@ class Settings():
         """ save application settings into system """
         self.store("settings", self.settings)
 
+        # serialize shortcuts
+        shorts = {}
+        for key, shortcut in self.shortcuts.items():
+          shorts[key] = shortcut.key().toString(QKeySequence.NativeText)
+        self.store("shortcuts", shorts)
+
     def execDialog(self):
         """ execute dialog and apply settings if pressed OK """
-        dialog = SettingsDialog(self.settings.copy())
+        dialog = SettingsDialog(self.settings.copy(), self.shortcuts)
         if dialog.exec_():
             log.info("Saving settings...")
             oldpath = self.settings[MANGA_SETTINGS_PATH]
@@ -60,6 +96,7 @@ class Settings():
 
             self.settings = dialog.settings
             self.refreshMangaSettings()
+
             return True
         return False
 

@@ -65,9 +65,9 @@ Check the **INSTALL.platform.md** file for installation instructions.
 ## License
 This software uses following 3rd-party libs:
 
-- [Pillow] ([PIL-License][PILlicense])
-- [PyQt5] (GPL v3)
-- [rarfile] (ISC)
+- [Pillow]() ([PIL-License][PILlicense])
+- [PyQt5]() (GPL v3)
+- [rarfile]() (ISC)
 
 This software is licensed under the [MIT license].  
 © 2013 Jens Schmer

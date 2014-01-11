@@ -1,5 +1,16 @@
+# python stuff
 /__pycache__
+
+# VS stuff
 /*.sln
 /*.suo
 /*.pyproj
-/bui
+
+# generated qt ui files
+/ui*.py
+
+# generated qt resource files
+/*rc.py
+
+# generated version file
+/version.py

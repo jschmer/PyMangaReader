@@ -23,11 +23,28 @@ def rotate(image, deg):
 class OrientationLabel(QLabel):
     rotation = 0
 
+    # font settings
+    font = None
+    pointsize = 12
+    family = "Arial"
+    bold = True
+
+    def __init__(self, text, parent):
+        super(OrientationLabel, self).__init__(text, parent)
+        self.font = QFont() # default application font
+
     def paintEvent(self, paintEvent):
         painter = QPainter(self)
  
+        font = self.font
+        font.setFamily(self.family)
+        font.setBold(self.bold)
+        font.setPointSize(self.pointsize)
+
+        log.info("FONT: %s " % (self.font.toString()))
+
         # Set default font
-        painter.setFont(QFont())
+        painter.setFont(font)
         # Set font color
         painter.setPen(Qt.black)
         # Get QFontMetrics reference
@@ -195,10 +212,8 @@ class MainWindow(QMainWindow):
         self.dropdown_page.child = None
 
         # load mangas in manga directory setting, needs self.dropdown_manga.currentIndexChanged to be connected
+        # also selects last viewed manga
         self.loadMangaBooks()
-
-        # select last viewed manga
-        self.loadLastSelectedManga()
 
         # load previous image absolute rotation
         rot = self.settings.load("absolute_rotation")
@@ -397,7 +412,7 @@ class MainWindow(QMainWindow):
         self.dropdown_manga.currentIndexChanged.connect(self.loadVolumeFiles)
 
         self.loadLastSelectedManga()
-        self.loadVolumeFiles()
+        #self.loadVolumeFiles()
 
     def loadVolumeFiles(self):
         """

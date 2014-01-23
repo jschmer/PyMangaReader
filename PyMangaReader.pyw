@@ -879,17 +879,11 @@ class MainWindow(QMainWindow):
         self.scrollArea.setWidgetResizable(False) # honors the manga_image_label size         
 
         image_size = self.manga_image_label.pixmap().size()
-        #log.info("Image size before zoom: %d/%d" % (image_size.width(), image_size.height()))
-
         scaled_image_size = image_size * scale_factor
-        #log.info("Image size after zoom: %d/%d" % (scaled_image_size.width(), scaled_image_size.height()))
 
-        pic = self.manga_image.resize((scaled_image_size.width(), scaled_image_size.height()), self.resize_mode)
-        # or PIL.Image.NEAREST
-        # or PIL.Image.BILINEAR
-        # or PIL.Image.BICUBIC
-        # or PIL.Image.ANTIALIAS (for downsampling?)
-
+        # manga_image is a PIL.Image, use biliniear filter for speed
+        pic = self.manga_image.resize((scaled_image_size.width(), scaled_image_size.height()), Image.BILINEAR)
+        
         # convert PIL.Image to QPixmap
         self.___cached_data = ImageQt(pic) # to prevent python to clean the data up that qpixmap references :I
         pic = QPixmap.fromImage(self.___cached_data)

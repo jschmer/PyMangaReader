@@ -598,7 +598,7 @@ class MainWindow(QMainWindow):
     def isMenuVisible(self):
         return self.ui.groupBox.isVisible()
 
-    def showMenu(self, activate = None):
+    def showMenu(self, activate = None, refreshImage = True):
         """
         Show the menu, if activate is not given, it is toggled
         """
@@ -611,7 +611,9 @@ class MainWindow(QMainWindow):
             self.ui.groupBox.hide()
 
         self.updateMouseCursor()
-        self.refreshMangaImage()
+
+        if refreshImage:
+            self.refreshMangaImage()
 
     def updateMouseCursor(self):
         if not self.isMenuVisible() and self.isFullScreen() and self.windowStatus == WindowActive:
@@ -633,10 +635,10 @@ class MainWindow(QMainWindow):
         if the image would only go fullscreen this wouldn't be possible (as far as i know?)
         """
         if not self.isFullScreen():
-            self.showMenu(False)
+            self.showMenu(False, False)
             self.showFullScreen()
         else:
-            self.showMenu(True)
+            self.showMenu(True, False)
             self.showNormal()
 
         self.updateMouseCursor()

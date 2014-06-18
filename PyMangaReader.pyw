@@ -177,6 +177,8 @@ class MainWindow(QMainWindow):
         # connect button clicks
         self.ui.pushSettings.clicked.connect(self.on_settings)
         self.ui.pushAbout   .clicked.connect(self.on_about)
+        self.ui.pushPrevManga.clicked.connect(self.on_navigate_to_prev_manga)
+        self.ui.pushNextManga.clicked.connect(self.on_navigate_to_next_manga)
 
         # and dropdown changes
         self.dropdown_manga  .currentIndexChanged.connect(self.loadVolumeFiles)
@@ -256,7 +258,7 @@ class MainWindow(QMainWindow):
 
     # GETTER
     def selectedMangaIdx(self):
-        """ current selected volume index in the dropdown box """
+        """ current selected manga index in the dropdown box """
         vol = self.dropdown_manga.currentIndex()
         return vol
     
@@ -607,6 +609,7 @@ class MainWindow(QMainWindow):
             self.showNormal()
 
         self.updateMouseCursor()
+
     def selectEntry(self, combobox, delta):
         """
         Select the entry delta indexes away in the given combobox
@@ -808,6 +811,12 @@ class MainWindow(QMainWindow):
                 break
             except NoElementsError:
                 continue
+
+    def on_navigate_to_prev_manga(self):
+        self.selectEntry(self.dropdown_manga, -1)
+
+    def on_navigate_to_next_manga(self):
+        self.selectEntry(self.dropdown_manga, 1)
 
     def event(self, event):
         if event.type() in (QEvent.WindowActivate, QEvent.WindowDeactivate):

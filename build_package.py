@@ -48,7 +48,7 @@ def generateVersionForGUI(version_string):
  
 
 def buildPackage():
-  version = generateVersionForCurrentCommit()
+  version, versionnum = generateVersionForCurrentCommit()
 
   generateVersionForGUI(version)
   
@@ -56,7 +56,7 @@ def buildPackage():
   compileUIFiles()
 
   # build the package with cx_freeze
-  build(cmd="build", ver=version)
+  build(cmd="build", ver=versionnum)
 
   # got to build folder
   os.chdir("build")

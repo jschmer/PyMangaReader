@@ -24,7 +24,7 @@ def generateVersionForCurrentCommit():
 
 
       temp_version_string = "v%d.%d-preview%d" % (major, minor, commits_ahead)
-      return temp_version_string
+      return (temp_version_string, "%d.%d.%d" % (major, minor, commits_ahead))
 
     else:
       print("Failed to extract version from", out)

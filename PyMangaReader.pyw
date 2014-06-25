@@ -23,11 +23,28 @@ def rotate(image, deg):
 class OrientationLabel(QLabel):
     rotation = 0
 
+    # font settings
+    font = None
+    pointsize = 12
+    family = "Arial"
+    bold = True
+
+    def __init__(self, text, parent):
+        super(OrientationLabel, self).__init__(text, parent)
+        self.font = QFont() # default application font
+
     def paintEvent(self, paintEvent):
         painter = QPainter(self)
  
+        font = self.font
+        font.setFamily(self.family)
+        font.setBold(self.bold)
+        font.setPointSize(self.pointsize)
+
+        log.info("FONT: %s " % (self.font.toString()))
+
         # Set default font
-        painter.setFont(QFont())
+        painter.setFont(font)
         # Set font color
         painter.setPen(Qt.black)
         # Get QFontMetrics reference
@@ -89,7 +106,8 @@ class DoubleClickLabel(QLabel):
         super(DoubleClickLabel, self).__init__()
 
     def mouseDoubleClickEvent(self, event):
-        self.onDoubleClick.emit()
+        if event.button() == Qt.LeftButton:
+            self.onDoubleClick.emit()
 
 
 WindowActive = QEvent.WindowActivate
@@ -100,6 +118,8 @@ class MainWindow(QMainWindow):
     absolute_rotation = 0
     windowStatus = WindowPassive
     resize_mode = None
+    scale_factor = 1.0
+    zoomed = False
 
     manga_before = None # cache for last selected manga
     settings = None
@@ -149,13 +169,18 @@ class MainWindow(QMainWindow):
         self.toast_label = OrientationLabel("TOAST MESSAGE", self.ui.scrollArea)
         self.toast_label.hide()
 
-        self.ui.manga_image_label = DoubleClickLabel()
-        self.ui.manga_image_label.onDoubleClick.connect(self.toggleFullscreen)
-        self.ui.manga_image_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        self.ui.manga_image_label.setStyleSheet("background-color: rgb(0, 0, 0);\ncolor: rgb(255, 255, 255);")
-        self.ui.manga_image_label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        self.manga_image_label = self.ui.manga_image_label
+        self.manga_image_label = DoubleClickLabel()
+        self.manga_image_label.onDoubleClick.connect(self.toggleFullscreen)
+        self.manga_image_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self.manga_image_label.setStyleSheet("background-color: rgb(0, 0, 0);\ncolor: rgb(255, 255, 255);")
+        self.manga_image_label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        self.manga_image_label.setScaledContents(False)
 
-        self.ui.scrollArea.setWidget(self.ui.manga_image_label)
+        # scrollArea alias
+        self.scrollArea = self.ui.scrollArea
+
+        self.scrollArea.setWidget(self.manga_image_label)
 
         # load previous window geometry
         geom = self.settings.load("geometry")
@@ -195,10 +220,8 @@ class MainWindow(QMainWindow):
         self.dropdown_page.child = None
 
         # load mangas in manga directory setting, needs self.dropdown_manga.currentIndexChanged to be connected
+        # also selects last viewed manga
         self.loadMangaBooks()
-
-        # select last viewed manga
-        self.loadLastSelectedManga()
 
         # load previous image absolute rotation
         rot = self.settings.load("absolute_rotation")
@@ -235,6 +258,14 @@ class MainWindow(QMainWindow):
         resize_mode_antialias = QShortcut(QKeySequence(Qt.Key_4), self)
         resize_mode_antialias.activated.connect(self.setResizeModeAntiAlias)
         self.shortcuts["resize_mode_antialias"] = resize_mode_antialias
+
+        zoom = QShortcut(QKeySequence(Qt.Key_Z), self)
+        zoom.activated.connect(self.zoom)
+        self.shortcuts["zoom"] = zoom
+
+        unzoom = QShortcut(QKeySequence(Qt.Key_U), self)
+        unzoom.activated.connect(self.unzoom)
+        self.shortcuts["unzoom"] = unzoom
 
     def setResizeModeNearest(self):
         self.resize_mode = Image.NEAREST
@@ -397,7 +428,7 @@ class MainWindow(QMainWindow):
         self.dropdown_manga.currentIndexChanged.connect(self.loadVolumeFiles)
 
         self.loadLastSelectedManga()
-        self.loadVolumeFiles()
+        #self.loadVolumeFiles()
 
     def loadVolumeFiles(self):
         """
@@ -567,7 +598,7 @@ class MainWindow(QMainWindow):
     def isMenuVisible(self):
         return self.ui.groupBox.isVisible()
 
-    def showMenu(self, activate = None):
+    def showMenu(self, activate = None, refreshImage = True):
         """
         Show the menu, if activate is not given, it is toggled
         """
@@ -580,7 +611,9 @@ class MainWindow(QMainWindow):
             self.ui.groupBox.hide()
 
         self.updateMouseCursor()
-        self.refreshMangaImage()
+
+        if refreshImage:
+            self.refreshMangaImage()
 
     def updateMouseCursor(self):
         if not self.isMenuVisible() and self.isFullScreen() and self.windowStatus == WindowActive:
@@ -602,10 +635,10 @@ class MainWindow(QMainWindow):
         if the image would only go fullscreen this wouldn't be possible (as far as i know?)
         """
         if not self.isFullScreen():
-            self.showMenu(False)
+            self.showMenu(False, False)
             self.showFullScreen()
         else:
-            self.showMenu(True)
+            self.showMenu(True, False)
             self.showNormal()
 
         self.updateMouseCursor()
@@ -663,15 +696,15 @@ class MainWindow(QMainWindow):
         self.geometryUpdateHack()
         
         # resize toast label
-        self.toast_label.resize(self.ui.manga_image_label.size())
+        self.toast_label.resize(self.manga_image_label.size())
 
         # resize manga image only if it is not empty
         pic = self.manga_image
         if pic is None:
             pic = QPixmap()
         else:
-            maxwidth = self.ui.manga_image_label.size().width()
-            maxheight = self.ui.manga_image_label.size().height()
+            maxwidth  = self.manga_image_label.size().width()
+            maxheight = self.manga_image_label.size().height()
 
             width = pic.size[0]
             height = pic.size[1]
@@ -688,7 +721,7 @@ class MainWindow(QMainWindow):
             pic = QPixmap.fromImage(self.___cached_data)
 
         # update label with scaled pixmap (or empty pixmap)
-        self.ui.manga_image_label.setPixmap(pic)
+        self.manga_image_label.setPixmap(pic)
 
     def closeEvent(self, event):
         """ Close the window but save settings before that! """
@@ -714,6 +747,16 @@ class MainWindow(QMainWindow):
         elif delta < 0:
             self.pageflipNext()
         pass
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.ExtraButton1:
+            # mouse backward
+            self.unzoom()
+        elif event.button() == Qt.ExtraButton2:
+            # mouse forwared
+            self.zoom()
+        #else:
+        #    log.info("Mouse %d" % event.button())
 
     def checkForEmptyMangas(self):
         # ask if settings should be opened if no mangas were found
@@ -757,6 +800,8 @@ class MainWindow(QMainWindow):
         self.rotate(-90)
 
     def pageflipPrev(self):
+        self.resetZoom()
+
         # go to previous page
         # if the page-list doesn't have any entries then try to go to the previous "chapter"
         # if the chapter-list doesn't have any entries then try to go to the previous "volume"
@@ -789,6 +834,8 @@ class MainWindow(QMainWindow):
                 continue
 
     def pageflipNext(self):
+        self.resetZoom()
+
         # go to next page
         # if the page-list doesn't have any entries then try to go to the next "chapter"
         # if the chapter-list doesn't have any entries then try to go to the next "volume"
@@ -824,6 +871,60 @@ class MainWindow(QMainWindow):
             self.updateMouseCursor()
 
         return super().event(event)
+
+    def scaleImage(self, factor):
+        scale_factor = self.scale_factor
+        if scale_factor < 0.3 or scale_factor > 2:
+            return
+        scale_factor *= factor;
+
+        self.scrollArea.setWidgetResizable(False) # honors the manga_image_label size         
+
+        image_size = self.manga_image_label.pixmap().size()
+        scaled_image_size = image_size * scale_factor
+
+        # manga_image is a PIL.Image, use biliniear filter for speed
+        pic = self.manga_image.resize((scaled_image_size.width(), scaled_image_size.height()), Image.BILINEAR)
+        
+        # convert PIL.Image to QPixmap
+        self.___cached_data = ImageQt(pic) # to prevent python to clean the data up that qpixmap references :I
+        pic = QPixmap.fromImage(self.___cached_data)
+
+        # update label with scaled pixmap (or empty pixmap)
+        self.manga_image_label.setPixmap(pic)
+
+        # adjust size of the image label (but minimum is scrollArea size!) to let the scrollArea create scrollbars
+        w = max(scaled_image_size.width(), self.scrollArea.size().width())
+        h = max(scaled_image_size.height(), self.scrollArea.size().height())
+
+        if w > self.scrollArea.size().width():
+            #log.info("Showing horizontal scrollbar")
+            # works for now but should be determined programatically,
+            # unforunately the scrollbars aren't shown yet so we can't get the
+            # actual size with self.scrollArea.horizontalScrollBar().size().height()
+            h -= 17
+        if h > self.scrollArea.size().height():
+            #log.info("Showing vertical scrollbar")
+            w -= 17 # self.scrollArea.verticalScrollBar().size().width()
+
+        self.manga_image_label.resize(w, h)
+
+        adjustScrollBar(self.scrollArea.horizontalScrollBar(), factor);
+        adjustScrollBar(self.scrollArea.verticalScrollBar(), factor);
+
+    def zoom(self):
+        self.scaleImage(1.1)
+    
+    def unzoom(self):
+        self.scaleImage(0.9)
+
+    def resetZoom(self):
+        self.scale_factor = 1.0
+        self.scrollArea.setWidgetResizable(True)
+
+
+def adjustScrollBar(scrollBar, factor):
+    scrollBar.setValue(int(factor * scrollBar.value() + ((factor - 1) * scrollBar.pageStep()/2)));
 
 if __name__ == '__main__':
     setupLoggerFromCmdArgs(sys.argv)
